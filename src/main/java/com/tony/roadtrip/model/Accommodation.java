@@ -22,6 +22,9 @@ public class Accommodation {
     private String checkInTime;    // Ex: "15:00"
     private String checkOutTime;   // Ex: "10:00"
 
+    private Double latitude;       // Ex: 44.17
+    private Double longitude;      // Ex: 9.61
+
     private Double cost;           // Coût total du logement
     private boolean isPaid;        // true = payé, false = à payer sur place
 }

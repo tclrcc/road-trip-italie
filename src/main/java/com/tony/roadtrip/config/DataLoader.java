@@ -27,6 +27,8 @@ public class DataLoader {
             hubLigurie.setCheckOutTime("10:00");
             hubLigurie.setCost(364.86);
             hubLigurie.setPaid(false);
+            hubLigurie.setLatitude(44.1705);
+            hubLigurie.setLongitude(9.6135);
             // Enregistrement du logement
             accommodationRepository.save(hubLigurie);
 
@@ -39,6 +41,8 @@ public class DataLoader {
             hubToscane.setCheckOutTime("11:00");
             hubToscane.setCost(512.86);
             hubToscane.setPaid(true);
+            hubToscane.setLatitude(43.7529);
+            hubToscane.setLongitude(11.1764);
             // Enregistrement du logement
             accommodationRepository.save(hubToscane);
 
@@ -51,6 +55,8 @@ public class DataLoader {
             hubToscane.setCheckOutTime("10:00");
             hubRome.setCost(482.43);
             hubRome.setPaid(true);
+            hubRome.setLatitude(41.8415);
+            hubRome.setLongitude(12.5855);
             // Enregistrement du logement
             accommodationRepository.save(hubRome);
 
@@ -63,6 +69,8 @@ public class DataLoader {
             hubToscane.setCheckOutTime("10:00");
             hubEmilie.setCost(196.46);
             hubEmilie.setPaid(false);
+            hubEmilie.setLatitude(44.6471);
+            hubEmilie.setLongitude(10.9252);
             // Enregistrement du logement
             accommodationRepository.save(hubEmilie);
 
@@ -73,6 +81,8 @@ public class DataLoader {
             hubLacs.setAirbnbLink("https://www.airbnb.fr/trips/v1/reservation-details/ro/RESERVATION2_CHECKIN/HMZTKPBDK4");
             hubLacs.setCost(418.65);
             hubLacs.setPaid(false);
+            hubLacs.setLatitude(46.0205);
+            hubLacs.setLongitude(9.2384);
             // Enregistrement du logement
             accommodationRepository.save(hubLacs);
 
