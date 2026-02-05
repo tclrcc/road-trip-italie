@@ -89,6 +89,41 @@
         </div>
     </div>
 
+    <h5 class="text-muted mb-3"><i class="fas fa-folder-open"></i> Coffre-fort Numérique</h5>
+    <div class="card mb-4 p-3 shadow-sm border-0">
+        <div class="row align-items-center">
+
+            <div class="col-md-4 mb-3 mb-md-0 border-end">
+                <h6 class="fw-bold mb-2">Ajouter un document</h6>
+                <form method="POST" action="/uploadDoc" enctype="multipart/form-data" class="d-flex gap-2">
+                    <input type="file" name="file" class="form-control form-control-sm" required>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i></button>
+                </form>
+                <small class="text-muted fst-italic">Billets, ID, Résas...</small>
+            </div>
+
+            <div class="col-md-8">
+                <h6 class="fw-bold mb-2">Mes Fichiers (<span th:text="${documents.size()}"></span>)</h6>
+
+                <div th:if="${documents.isEmpty()}" class="text-muted small">Aucun document enregistré.</div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <div th:each="doc : ${documents}" class="btn-group" role="group">
+                        <a th:href="@{'/document/' + ${doc.id}}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-file-pdf text-danger" th:if="${doc.type.contains('pdf')}"></i>
+                            <i class="fas fa-file-image text-primary" th:if="${doc.type.contains('image')}"></i>
+                            <i class="fas fa-file text-muted" th:unless="${doc.type.contains('pdf') || doc.type.contains('image')}"></i>
+                            <span th:text="${doc.name}" class="ms-1"></span>
+                        </a>
+                        <a th:href="@{'/deleteDoc/' + ${doc.id}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer ce fichier ?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <h5 class="text-muted mb-3"><i class="fas fa-calendar-alt"></i> Itinéraire Jour par Jour</h5>
     <div class="row">
         <div class="col-12">

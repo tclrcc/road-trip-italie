@@ -2,12 +2,23 @@ package com.tony.roadtrip.controller;
 
 import com.tony.roadtrip.model.Accommodation;
 import com.tony.roadtrip.model.ItineraryDay;
+import com.tony.roadtrip.model.TripDocument;
+import com.tony.roadtrip.repository.DocumentRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -18,6 +29,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TripController {
     private final ItineraryRepository repository;
+    private final DocumentRepository documentRepository;
 
     @GetMapping("/")
     public String viewHomePage(Model model) {
@@ -73,6 +85,45 @@ public class TripController {
             model.addAttribute("remainingToPay", remainingToPay);
         }
 
+        List<TripDocument> docs = documentRepository.findAll();
+        model.addAttribute("documents", docs);
+
         return "index";
+    }
+
+    // --- NOUVEAU : Endpoint pour UPLOADER un fichier ---
+    @PostMapping("/uploadDoc")
+    public String uploadDocument(@RequestParam("file") MultipartFile file) {
+        try {
+            if (!file.isEmpty()) {
+                TripDocument doc = new TripDocument();
+                doc.setName(file.getOriginalFilename());
+                doc.setType(file.getContentType());
+                doc.setContent(file.getBytes());
+                documentRepository.save(doc);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "redirect:/";
+    }
+
+    // --- NOUVEAU : Endpoint pour TÉLÉCHARGER/VOIR un fichier ---
+    @GetMapping("/document/{id}")
+    public ResponseEntity<ByteArrayResource> downloadDocument(@PathVariable Long id) {
+        TripDocument doc = documentRepository.findById(id).orElse(null);
+        if (doc == null) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(doc.getType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.getName() + "\"")
+                .body(new ByteArrayResource(doc.getContent()));
+    }
+
+    // --- NOUVEAU : Endpoint pour SUPPRIMER un fichier (Optionnel mais utile) ---
+    @GetMapping("/deleteDoc/{id}")
+    public String deleteDocument(@PathVariable Long id) {
+        documentRepository.deleteById(id);
+        return "redirect:/";
     }
 }
