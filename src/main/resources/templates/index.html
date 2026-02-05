@@ -71,7 +71,8 @@
                  th:classappend="${acc.paid} ? 'border-success' : 'border-warning'"
                  th:data-lat="${acc.latitude}"
                  th:data-lng="${acc.longitude}"
-                 th:data-name="${acc.name}">
+                 th:data-name="${acc.name}"
+                 th:data-step="${acc.stepNumber}"  th:data-type="${acc.type}">
 
                 <div class="card-body">
                     <h6 class="card-title fw-bold text-truncate" th:text="${acc.name}"></h6>

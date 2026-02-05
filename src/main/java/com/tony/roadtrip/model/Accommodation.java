@@ -21,8 +21,13 @@ public class Accommodation {
     private String checkInTime;    // Ex: "15:00"
     private String checkOutTime;   // Ex: "10:00"
 
+    // --- Coordonnées GPS ---
     private Double latitude;       // Ex: 44.17
     private Double longitude;      // Ex: 9.61
+
+    // --- Champs pour la Map ---
+    private Integer stepNumber; // 0 pour le départ, 1, 2, 3...
+    private String type;        // "START" ou "HUB"
 
     private Double cost;           // Coût total du logement
     private boolean isPaid;        // true = payé, false = à payer sur place

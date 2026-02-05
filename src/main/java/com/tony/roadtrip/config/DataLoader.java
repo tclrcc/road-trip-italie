@@ -18,7 +18,20 @@ public class DataLoader {
         return args -> {
             // --- 1. CRÉATION DES LOGEMENTS (Tes Airbnbs) ---
 
-            // Logement 1 - Levanto Home
+            // 0. POINT DE DÉPART : LAGNIEU
+            Accommodation startPoint = new Accommodation();
+            startPoint.setName("Départ : Lagnieu");
+            startPoint.setLocation("Lagnieu, France");
+            startPoint.setLatitude(45.9028);
+            startPoint.setLongitude(5.3516);
+            startPoint.setCost(0.0);
+            startPoint.setPaid(true);
+            startPoint.setStepNumber(0); // Point de départ
+            startPoint.setType("START");
+            // Enregistrement du point de départ
+            accommodationRepository.save(startPoint);
+
+            // HUB 1 - LIGURIE (Levanto) - 4 nuits
             Accommodation hubLigurie = new Accommodation();
             hubLigurie.setName("Hub Ligurie : Airbnb Levanto");
             hubLigurie.setLocation("Via Guido Semenza, 15 Stanza con cucina e servizi, Levanto, Ligurie 19015, Italie");
@@ -29,10 +42,12 @@ public class DataLoader {
             hubLigurie.setPaid(false);
             hubLigurie.setLatitude(44.1705);
             hubLigurie.setLongitude(9.6135);
+            hubLigurie.setStepNumber(1); // Premier hub après le départ
+            hubLigurie.setType("HUB");
             // Enregistrement du logement
             accommodationRepository.save(hubLigurie);
 
-            // HUB 2 : TOSCANE (Scandicci)
+            // HUB 2 : TOSCANE (Scandicci) - 6 nuits
             Accommodation hubToscane = new Accommodation();
             hubToscane.setName("Hub Toscane : Airbnb Scandicci");
             hubToscane.setLocation("Via Pietro Fanfani, 43, Florence, Tuscany 50127");
@@ -43,10 +58,12 @@ public class DataLoader {
             hubToscane.setPaid(true);
             hubToscane.setLatitude(43.7529);
             hubToscane.setLongitude(11.1764);
+            hubToscane.setStepNumber(2);
+            hubToscane.setType("HUB");
             // Enregistrement du logement
             accommodationRepository.save(hubToscane);
 
-            // HUB 3 : ROME (Périphérie)
+            // HUB 3 : ROME (Périphérie) - 5 nuits
             Accommodation hubRome = new Accommodation();
             hubRome.setName("Hub Latium : Rome Anagnina/Cinecittà");
             hubRome.setLocation("Via Giusto Fontanini, 13, Rome, Lazio 00173");
@@ -57,10 +74,12 @@ public class DataLoader {
             hubRome.setPaid(true);
             hubRome.setLatitude(41.8415);
             hubRome.setLongitude(12.5855);
+            hubRome.setStepNumber(3);
+            hubRome.setType("HUB");
             // Enregistrement du logement
             accommodationRepository.save(hubRome);
 
-            // HUB 4 : ÉMILIE-ROMAGNE (Modène)
+            // HUB 4 : ÉMILIE-ROMAGNE (Modène) - 3 nuits
             Accommodation hubEmilie = new Accommodation();
             hubEmilie.setName("Hub Emilia-Romagna : Modène");
             hubEmilie.setLocation("Via 11 Settembre, 14, Saliceto Buzzalino, Emilia-Romagna 41011");
@@ -71,10 +90,12 @@ public class DataLoader {
             hubEmilie.setPaid(false);
             hubEmilie.setLatitude(44.6471);
             hubEmilie.setLongitude(10.9252);
+            hubEmilie.setStepNumber(4);
+            hubEmilie.setType("HUB");
             // Enregistrement du logement
             accommodationRepository.save(hubEmilie);
 
-            // HUB 5 : LACS (Côme/Menaggio)
+            // HUB 5 : LACS (Côme/Menaggio) - 3 nuits
             Accommodation hubLacs = new Accommodation();
             hubLacs.setName("Hub Lacs : Menaggio / Tremezzina");
             hubLacs.setLocation("Via Avvocato Romolo Quaglino, 6 , Tremezzo, CO 22019");
@@ -83,6 +104,8 @@ public class DataLoader {
             hubLacs.setPaid(false);
             hubLacs.setLatitude(46.0205);
             hubLacs.setLongitude(9.2384);
+            hubLacs.setStepNumber(5);
+            hubLacs.setType("HUB");
             // Enregistrement du logement
             accommodationRepository.save(hubLacs);
 
