@@ -3,7 +3,6 @@ package com.tony.roadtrip.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDate;
 
 @Data
 @Entity
@@ -13,7 +12,7 @@ public class Accommodation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;           // Ex: "Appartement Levanto Center"
+    private String name;           // Ex : "Appartement Levanto Center"
     private String location;       // Adresse exacte pour Google Maps
 
     @Column(length = 1000)

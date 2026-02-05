@@ -10,7 +10,7 @@ public class TripDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;           // Nom du fichier (ex: "Billets Colisée.pdf")
+    private String name;           // Nom du fichier (ex : "Billets Colisée.pdf")
     private String type;           // Type MIME (ex: "application/pdf", "image/jpeg")
 
     @Lob // Indique un gros contenu binaire (Large Object)

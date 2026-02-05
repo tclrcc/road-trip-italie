@@ -6,6 +6,7 @@ import com.tony.roadtrip.model.TripDocument;
 import com.tony.roadtrip.repository.DocumentRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class TripController {
     private final ItineraryRepository repository;
     private final DocumentRepository documentRepository;
@@ -103,7 +105,7 @@ public class TripController {
                 documentRepository.save(doc);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Erreur lors upload du fichier : {}", e.getMessage());
         }
         return "redirect:/";
     }
@@ -120,7 +122,7 @@ public class TripController {
                 .body(new ByteArrayResource(doc.getContent()));
     }
 
-    // --- NOUVEAU : Endpoint pour SUPPRIMER un fichier (Optionnel mais utile) ---
+    // --- NOUVEAU : Endpoint pour SUPPRIMER un fichier (Optionnel, mais utile) ---
     @GetMapping("/deleteDoc/{id}")
     public String deleteDocument(@PathVariable Long id) {
         documentRepository.deleteById(id);

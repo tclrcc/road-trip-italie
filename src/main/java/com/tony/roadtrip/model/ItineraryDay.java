@@ -21,7 +21,7 @@ public class ItineraryDay {
     @Column(length = 1000)
     private String logisticsTip;
 
-    private Double dailyBudget;    // Budget pour la journée (essence/bouffe/activités) - HORS Logement
+    private Double dailyBudget;    // Budget pour la journée (essence/bouffe/activités). HORS Logement
     private boolean warningZTL;
 
     // --- RELATIONS ---
