@@ -66,13 +66,17 @@
 
     <h5 class="text-muted mb-3"><i class="fas fa-bed"></i> Mes Hubs (Logements)</h5>
     <div class="row flex-nowrap overflow-auto pb-3 mb-3">
-        <div class="col-md-4 col-10" th:each="acc : ${accommodations}">
+
+        <div class="col-md-4 col-10"
+             th:each="acc : ${accommodations}"
+             th:classappend="${acc.type.name() == 'START' || acc.type.name() == 'END'} ? 'd-none' : ''">
             <div class="card h-100 border-start border-4 accommodation-card"
                  th:classappend="${acc.paid} ? 'border-success' : 'border-warning'"
                  th:data-lat="${acc.latitude}"
                  th:data-lng="${acc.longitude}"
                  th:data-name="${acc.name}"
-                 th:data-step="${acc.stepNumber}"  th:data-type="${acc.type}">
+                 th:data-step="${acc.stepNumber}"
+                 th:data-type="${acc.type}">
 
                 <div class="card-body">
                     <h6 class="card-title fw-bold text-truncate" th:text="${acc.name}"></h6>

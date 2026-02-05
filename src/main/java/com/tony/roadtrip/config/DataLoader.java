@@ -1,6 +1,7 @@
 package com.tony.roadtrip.config;
 
 import com.tony.roadtrip.model.Accommodation;
+import com.tony.roadtrip.model.AccommodationType;
 import com.tony.roadtrip.model.ItineraryDay;
 import com.tony.roadtrip.repository.AccommodationRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
@@ -27,7 +28,7 @@ public class DataLoader {
             startPoint.setCost(0.0);
             startPoint.setPaid(true);
             startPoint.setStepNumber(0); // Point de départ
-            startPoint.setType("START");
+            startPoint.setType(AccommodationType.START);
             // Enregistrement du point de départ
             accommodationRepository.save(startPoint);
 
@@ -43,7 +44,7 @@ public class DataLoader {
             hubLigurie.setLatitude(44.1705);
             hubLigurie.setLongitude(9.6135);
             hubLigurie.setStepNumber(1); // Premier hub après le départ
-            hubLigurie.setType("HUB");
+            hubLigurie.setType(AccommodationType.HUB);
             // Enregistrement du logement
             accommodationRepository.save(hubLigurie);
 
@@ -59,7 +60,7 @@ public class DataLoader {
             hubToscane.setLatitude(43.7529);
             hubToscane.setLongitude(11.1764);
             hubToscane.setStepNumber(2);
-            hubToscane.setType("HUB");
+            hubToscane.setType(AccommodationType.HUB);
             // Enregistrement du logement
             accommodationRepository.save(hubToscane);
 
@@ -75,7 +76,7 @@ public class DataLoader {
             hubRome.setLatitude(41.8415);
             hubRome.setLongitude(12.5855);
             hubRome.setStepNumber(3);
-            hubRome.setType("HUB");
+            hubRome.setType(AccommodationType.HUB);
             // Enregistrement du logement
             accommodationRepository.save(hubRome);
 
@@ -91,7 +92,7 @@ public class DataLoader {
             hubEmilie.setLatitude(44.6471);
             hubEmilie.setLongitude(10.9252);
             hubEmilie.setStepNumber(4);
-            hubEmilie.setType("HUB");
+            hubEmilie.setType(AccommodationType.HUB);
             // Enregistrement du logement
             accommodationRepository.save(hubEmilie);
 
@@ -105,7 +106,20 @@ public class DataLoader {
             hubLacs.setLatitude(46.0205);
             hubLacs.setLongitude(9.2384);
             hubLacs.setStepNumber(5);
-            hubLacs.setType("HUB");
+            hubLacs.setType(AccommodationType.HUB);
+            // Enregistrement du logement
+            accommodationRepository.save(hubLacs);
+
+            // 6 : Retour Lagnieu
+            Accommodation endPoint = new Accommodation();
+            endPoint.setName("Arrivée : Lagnieu");
+            endPoint.setLocation("Lagnieu, France");
+            endPoint.setLatitude(45.9028);
+            endPoint.setLongitude(5.3516);
+            endPoint.setCost(0.0);
+            endPoint.setPaid(true);
+            endPoint.setStepNumber(6); // Point d'arrivée
+            endPoint.setType(AccommodationType.END);
             // Enregistrement du logement
             accommodationRepository.save(hubLacs);
 

@@ -27,7 +27,9 @@ public class Accommodation {
 
     // --- Champs pour la Map ---
     private Integer stepNumber; // 0 pour le départ, 1, 2, 3...
-    private String type;        // "START" ou "HUB"
+
+    @Enumerated(EnumType.STRING) // Force l'enregistrement en texte ("START") dans la BDD
+    private AccommodationType type;
 
     private Double cost;           // Coût total du logement
     private boolean isPaid;        // true = payé, false = à payer sur place

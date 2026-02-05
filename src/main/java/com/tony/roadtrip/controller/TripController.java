@@ -3,6 +3,7 @@ package com.tony.roadtrip.controller;
 import com.tony.roadtrip.model.Accommodation;
 import com.tony.roadtrip.model.ItineraryDay;
 import com.tony.roadtrip.model.TripDocument;
+import com.tony.roadtrip.repository.AccommodationRepository;
 import com.tony.roadtrip.repository.DocumentRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class TripController {
     private final ItineraryRepository repository;
     private final DocumentRepository documentRepository;
+    private final AccommodationRepository accommodationRepository;
 
     @GetMapping("/")
     public String viewHomePage(Model model) {
@@ -53,38 +55,31 @@ public class TripController {
             model.addAttribute("duration", duration);
             model.addAttribute("daysBeforeStart", daysBeforeStart);
 
-            // 3. Gestion des Logements (Hubs) UNIQUES
-            // On filtre pour ne garder que les logements distincts (pas de doublons)
-            List<Accommodation> uniqueAccommodations = trip.stream()
-                    .map(ItineraryDay::getAccommodation)
-                    .filter(Objects::nonNull)
-                    .distinct() // Grâce au @Data de Lombok, le equals() fonctionne sur l'ID
-                    .collect(Collectors.toList());
-            model.addAttribute("accommodations", uniqueAccommodations);
-
             // 4. Calcul du Budget Intelligent
             // A. Budget Quotidien (Activités + Essence + Bouffe)
             double dailyCosts = trip.stream()
                     .mapToDouble(day -> day.getDailyBudget() != null ? day.getDailyBudget() : 0)
                     .sum();
 
+            List<Accommodation> allAccommodations = accommodationRepository.findAll();
+            model.addAttribute("accommodations", allAccommodations);
+
             // B. Budget Logement (Somme des coûts des hubs uniques)
-            double accommodationCosts = uniqueAccommodations.stream()
+            double accommodationCosts = allAccommodations.stream()
                     .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
                     .sum();
 
             // C. Budget Payé vs À Payer
-            double paidAmount = uniqueAccommodations.stream()
+            double paidAmount = allAccommodations.stream()
                     .filter(Accommodation::isPaid)
                     .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
                     .sum();
 
             double totalEstimated = dailyCosts + accommodationCosts;
-            double remainingToPay = totalEstimated - paidAmount;
 
             model.addAttribute("totalBudget", totalEstimated);
             model.addAttribute("paidAmount", paidAmount);
-            model.addAttribute("remainingToPay", remainingToPay);
+            model.addAttribute("remainingToPay", totalEstimated - paidAmount);
         }
 
         List<TripDocument> docs = documentRepository.findAll();

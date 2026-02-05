@@ -31,18 +31,17 @@ body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verda
     width: 30px;
     height: 30px;
     border-radius: 50% 50% 50% 0;
-    background: #3B82F6; /* Bleu par défaut */
+    background: #3B82F6;
     position: absolute;
     transform: rotate(-45deg);
     left: 50%;
     top: 50%;
     margin: -15px 0 0 -15px;
     box-shadow: 0 3px 5px rgba(0,0,0,0.3);
-    text-align: center;
 }
 
-/* Le rond blanc à l'intérieur */
-.marker-pin::after {
+/* Le rond blanc (Uniquement pour le point de DÉPART) */
+.marker-start .marker-pin::after {
     content: '';
     width: 14px;
     height: 14px;
@@ -52,25 +51,34 @@ body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verda
     border-radius: 50%;
 }
 
-/* Le numéro */
+/* COULEURS */
+.marker-start .marker-pin {
+    background: #10B981; /* Vert pour le départ */
+}
+
+.marker-hub .marker-pin {
+    background: #EF4444; /* Rouge vif pour les Hubs */
+}
+
+/* TEXTE (Numéros) */
 .marker-number {
     position: absolute;
-    top: -8px;
+    top: -5px; /* Ajusté pour être bien centré */
     left: 0;
     width: 100%;
     text-align: center;
     font-weight: bold;
     font-size: 14px;
+    z-index: 101;
+}
+
+/* Pour le départ (icône drapeau), on met le texte en foncé */
+.marker-start .marker-number {
+    color: #064E3B;
+    top: -7px;
+}
+
+/* Pour les hubs (chiffres), texte en BLANC sur fond ROUGE */
+.marker-hub .marker-number {
     color: white;
-    z-index: 100;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-}
-
-/* COULEURS SPÉCIFIQUES */
-.marker-start .marker-pin {
-    background: #10B981; /* Vert Émeraude pour le départ */
-}
-
-.marker-hub .marker-pin {
-    background: #EF4444; /* Rouge/Rose pour les Hubs */
 }
