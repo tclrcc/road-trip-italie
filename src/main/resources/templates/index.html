@@ -31,9 +31,19 @@
 <body>
 
 <div class="hero-section text-center shadow">
-    <div class="container">
+    <div class="container position-relative">
+        <form th:action="@{/logout}" method="post" class="position-absolute top-0 end-0 m-3">
+            <button type="submit" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </form>
+
         <h1 class="display-6 fw-bold"><i class="fas fa-route"></i> Grand Tour d'Italie 2026</h1>
-        <p class="mb-2">Tony & Jade • <span th:text="${duration}"></span> Jours de Dolce Vita</p>
+
+        <p class="mb-2">
+            Bienvenue <span class="fw-bold" th:text="${#authentication.name}">Voyageur</span> !
+            • <span th:text="${duration}"></span> Jours de Dolce Vita
+        </p>
 
         <div th:if="${daysBeforeStart > 0}" class="badge bg-light text-primary fs-6 mt-2">
             🚀 Départ dans <span th:text="${daysBeforeStart}"></span> jours
@@ -95,7 +105,7 @@
 
             <div class="col-md-4 mb-3 mb-md-0 border-end">
                 <h6 class="fw-bold mb-2">Ajouter un document</h6>
-                <form method="POST" action="/uploadDoc" enctype="multipart/form-data" class="d-flex gap-2">
+                <form method="POST" th:action="@{/uploadDoc}" enctype="multipart/form-data" class="d-flex gap-2">
                     <input type="file" name="file" class="form-control form-control-sm" required>
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i></button>
                 </form>
