@@ -1,7 +1,9 @@
 package com.tony.roadtrip.controller;
 
+import com.tony.roadtrip.model.Accommodation;
 import com.tony.roadtrip.model.ItineraryDay;
 import com.tony.roadtrip.repository.ItineraryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,47 +11,66 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Controller
+@RequiredArgsConstructor
 public class TripController {
-
     private final ItineraryRepository repository;
-
-    public TripController(ItineraryRepository repository) {
-        this.repository = repository;
-    }
 
     @GetMapping("/")
     public String viewHomePage(Model model) {
-        // 1. Récupérer tous les jours triés
+        // 1. Récupérer tous les jours triés par date
         List<ItineraryDay> trip = repository.findAllByOrderByDateAsc();
         model.addAttribute("days", trip);
 
         if (!trip.isEmpty()) {
-            // 2. Calculer le budget total estimé
-            double totalCost = trip.stream()
-                    .mapToDouble(day -> day.getEstimatedCost() != null ? day.getEstimatedCost() : 0)
-                    .sum();
-            model.addAttribute("totalBudget", totalCost);
-
-            // 3. Récupérer les dates (Début et Fin)
+            // 2. Gestion des Dates et Durée
             LocalDate startDate = trip.getFirst().getDate();
             LocalDate endDate = trip.getLast().getDate();
+            long duration = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+
+            // Calcul du compte à rebours (J-XX)
+            long daysBeforeStart = ChronoUnit.DAYS.between(LocalDate.now(), startDate);
+
             model.addAttribute("startDate", startDate);
             model.addAttribute("endDate", endDate);
-
-            // Calculer la durée
-            long duration = ChronoUnit.DAYS.between(startDate, endDate) + 1;
             model.addAttribute("duration", duration);
+            model.addAttribute("daysBeforeStart", daysBeforeStart);
 
-            // 4. Récupérer la liste des Hubs (Villes) UNIQUES
-            // On utilise un Stream pour prendre les noms, supprimer les doublons et en faire une liste
-            List<String> cities = trip.stream()
-                    .map(ItineraryDay::getHubLocation) // Prend seulement le nom du Hub
-                    .distinct()                        // Supprime les doublons (ex: garde un seul "Rome")
+            // 3. Gestion des Logements (Hubs) UNIQUES
+            // On filtre pour ne garder que les logements distincts (pas de doublons)
+            List<Accommodation> uniqueAccommodations = trip.stream()
+                    .map(ItineraryDay::getAccommodation)
+                    .filter(Objects::nonNull)
+                    .distinct() // Grâce au @Data de Lombok, le equals() fonctionne sur l'ID
                     .collect(Collectors.toList());
-            model.addAttribute("cities", cities);
+            model.addAttribute("accommodations", uniqueAccommodations);
+
+            // 4. Calcul du Budget Intelligent
+            // A. Budget Quotidien (Activités + Essence + Bouffe)
+            double dailyCosts = trip.stream()
+                    .mapToDouble(day -> day.getDailyBudget() != null ? day.getDailyBudget() : 0)
+                    .sum();
+
+            // B. Budget Logement (Somme des coûts des hubs uniques)
+            double accommodationCosts = uniqueAccommodations.stream()
+                    .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
+                    .sum();
+
+            // C. Budget Payé vs À Payer
+            double paidAmount = uniqueAccommodations.stream()
+                    .filter(Accommodation::isPaid)
+                    .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
+                    .sum();
+
+            double totalEstimated = dailyCosts + accommodationCosts;
+            double remainingToPay = totalEstimated - paidAmount;
+
+            model.addAttribute("totalBudget", totalEstimated);
+            model.addAttribute("paidAmount", paidAmount);
+            model.addAttribute("remainingToPay", remainingToPay);
         }
 
         return "index";
