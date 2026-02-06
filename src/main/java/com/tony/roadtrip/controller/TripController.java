@@ -1,11 +1,13 @@
 package com.tony.roadtrip.controller;
 
+import com.tony.roadtrip.dto.WeatherInfo;
 import com.tony.roadtrip.model.Accommodation;
 import com.tony.roadtrip.model.ItineraryDay;
 import com.tony.roadtrip.model.TripDocument;
 import com.tony.roadtrip.repository.AccommodationRepository;
 import com.tony.roadtrip.repository.DocumentRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
+import com.tony.roadtrip.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -23,7 +25,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,7 @@ public class TripController {
     private final ItineraryRepository repository;
     private final DocumentRepository documentRepository;
     private final AccommodationRepository accommodationRepository;
+    private final WeatherService weatherService;
 
     @GetMapping("/")
     public String viewHomePage(Model model) {
@@ -80,6 +85,29 @@ public class TripController {
             model.addAttribute("totalBudget", totalEstimated);
             model.addAttribute("paidAmount", paidAmount);
             model.addAttribute("remainingToPay", totalEstimated - paidAmount);
+
+            // --- NOUVEAU : CHARGEMENT MÉTÉO ---
+            Map<Long, WeatherInfo> weatherMap = new HashMap<>();
+
+            for (ItineraryDay day : trip) {
+                // On utilise les coords du logement si dispo, sinon coords par défaut (Rome par ex) ou on skip
+                Double lat = 41.9028;
+                Double lon = 12.4964;
+
+                if (day.getAccommodation() != null) {
+                    lat = day.getAccommodation().getLatitude();
+                    lon = day.getAccommodation().getLongitude();
+                } else {
+                    // TODO: Ajouter lat/lon dans ItineraryDay pour les jours sans logement fixe
+                    // Pour l'instant on utilise une lat fix pour la démo si null
+                }
+
+                if(lat != null && lon != null) {
+                    WeatherInfo info = weatherService.getWeatherForDate(lat, lon, day.getDate());
+                    weatherMap.put(day.getId(), info);
+                }
+            }
+            model.addAttribute("weatherMap", weatherMap);
         }
 
         List<TripDocument> docs = documentRepository.findAll();
