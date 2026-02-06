@@ -16,10 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -28,95 +25,98 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
 @Slf4j
 public class TripController {
+
     private final ItineraryRepository repository;
     private final DocumentRepository documentRepository;
     private final AccommodationRepository accommodationRepository;
     private final WeatherService weatherService;
 
+    // --- 1. DASHBOARD (Accueil) ---
     @GetMapping("/")
-    public String viewHomePage(Model model) {
-        // 1. Récupérer tous les jours triés par date
+    public String dashboard(Model model) {
+        model.addAttribute("activePage", "home");
+
+        List<ItineraryDay> trip = repository.findAllByOrderByDateAsc();
+        if (trip.isEmpty()) return "dashboard";
+
+        // Calculs basiques pour les widgets
+        LocalDate startDate = trip.getFirst().getDate();
+        long daysBeforeStart = ChronoUnit.DAYS.between(LocalDate.now(), startDate);
+        model.addAttribute("daysBeforeStart", daysBeforeStart);
+        model.addAttribute("duration", ChronoUnit.DAYS.between(startDate, trip.getLast().getDate()) + 1);
+
+        // Widget Budget
+        double dailyCosts = trip.stream().mapToDouble(d -> d.getDailyBudget() != null ? d.getDailyBudget() : 0).sum();
+        List<Accommodation> accs = accommodationRepository.findAll();
+        double accCosts = accs.stream().mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
+        double paid = accs.stream().filter(Accommodation::isPaid).mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
+
+        model.addAttribute("totalBudget", dailyCosts + accCosts);
+        model.addAttribute("paidAmount", paid);
+        model.addAttribute("remainingToPay", (dailyCosts + accCosts) - paid);
+
+        // Widget Prochaine étape (Première date future)
+        ItineraryDay nextStop = trip.stream()
+                .filter(d -> d.getDate().isAfter(LocalDate.now().minusDays(1)))
+                .findFirst()
+                .orElse(trip.getFirst());
+        model.addAttribute("nextStop", nextStop);
+
+        // Météo pour le widget nextStop
+        if (nextStop.getAccommodation() != null) {
+            model.addAttribute("weather", weatherService.getWeatherForDate(
+                    nextStop.getAccommodation().getLatitude(),
+                    nextStop.getAccommodation().getLongitude(),
+                    nextStop.getDate()));
+        }
+
+        return "dashboard"; // Nouvelle vue
+    }
+
+    // --- 2. PAGE ITINÉRAIRE ---
+    @GetMapping("/itinerary")
+    public String itinerary(Model model) {
+        model.addAttribute("activePage", "itinerary");
         List<ItineraryDay> trip = repository.findAllByOrderByDateAsc();
         model.addAttribute("days", trip);
 
-        if (!trip.isEmpty()) {
-            // 2. Gestion des Dates et Durée
-            LocalDate startDate = trip.getFirst().getDate();
-            LocalDate endDate = trip.getLast().getDate();
-            long duration = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-
-            // Calcul du compte à rebours (J-XX)
-            long daysBeforeStart = ChronoUnit.DAYS.between(LocalDate.now(), startDate);
-
-            model.addAttribute("startDate", startDate);
-            model.addAttribute("endDate", endDate);
-            model.addAttribute("duration", duration);
-            model.addAttribute("daysBeforeStart", daysBeforeStart);
-
-            // 4. Calcul du Budget Intelligent
-            // A. Budget Quotidien (Activités + Essence + Bouffe)
-            double dailyCosts = trip.stream()
-                    .mapToDouble(day -> day.getDailyBudget() != null ? day.getDailyBudget() : 0)
-                    .sum();
-
-            List<Accommodation> allAccommodations = accommodationRepository.findAll();
-            model.addAttribute("accommodations", allAccommodations);
-
-            // B. Budget Logement (Somme des coûts des hubs uniques)
-            double accommodationCosts = allAccommodations.stream()
-                    .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
-                    .sum();
-
-            // C. Budget Payé vs À Payer
-            double paidAmount = allAccommodations.stream()
-                    .filter(Accommodation::isPaid)
-                    .mapToDouble(acc -> acc.getCost() != null ? acc.getCost() : 0)
-                    .sum();
-
-            double totalEstimated = dailyCosts + accommodationCosts;
-
-            model.addAttribute("totalBudget", totalEstimated);
-            model.addAttribute("paidAmount", paidAmount);
-            model.addAttribute("remainingToPay", totalEstimated - paidAmount);
-
-            // --- NOUVEAU : CHARGEMENT MÉTÉO ---
-            Map<Long, WeatherInfo> weatherMap = new HashMap<>();
-
-            for (ItineraryDay day : trip) {
-                // On utilise les coords du logement si dispo, sinon coords par défaut (Rome par ex) ou on skip
-                Double lat = 41.9028;
-                Double lon = 12.4964;
-
-                if (day.getAccommodation() != null) {
-                    lat = day.getAccommodation().getLatitude();
-                    lon = day.getAccommodation().getLongitude();
-                } else {
-                    // TODO: Ajouter lat/lon dans ItineraryDay pour les jours sans logement fixe
-                    // Pour l'instant on utilise une lat fix pour la démo si null
-                }
-
-                if(lat != null && lon != null) {
-                    WeatherInfo info = weatherService.getWeatherForDate(lat, lon, day.getDate());
-                    weatherMap.put(day.getId(), info);
-                }
+        // Météo pour toute la timeline
+        Map<Long, WeatherInfo> weatherMap = new HashMap<>();
+        for (ItineraryDay day : trip) {
+            if (day.getAccommodation() != null) {
+                weatherMap.put(day.getId(), weatherService.getWeatherForDate(
+                        day.getAccommodation().getLatitude(),
+                        day.getAccommodation().getLongitude(),
+                        day.getDate()));
             }
-            model.addAttribute("weatherMap", weatherMap);
         }
+        model.addAttribute("weatherMap", weatherMap);
 
-        List<TripDocument> docs = documentRepository.findAll();
-        model.addAttribute("documents", docs);
-
-        return "index";
+        return "itinerary"; // Vue extraite de l'ancien index
     }
 
-    // --- NOUVEAU : Endpoint pour UPLOADER un fichier ---
+    // --- 3. PAGE CARTE ---
+    @GetMapping("/map")
+    public String mapPage(Model model) {
+        model.addAttribute("activePage", "map");
+        model.addAttribute("accommodations", accommodationRepository.findAll());
+        return "map_page";
+    }
+
+    // --- 4. PAGE DOCUMENTS ---
+    @GetMapping("/documents")
+    public String documentsPage(Model model) {
+        model.addAttribute("activePage", "docs");
+        model.addAttribute("documents", documentRepository.findAll());
+        return "documents";
+    }
+
+    // --- ACTIONS (Upload/Download) inchangées ---
     @PostMapping("/uploadDoc")
     public String uploadDocument(@RequestParam("file") MultipartFile file) {
         try {
@@ -128,27 +128,24 @@ public class TripController {
                 documentRepository.save(doc);
             }
         } catch (IOException e) {
-            log.error("Erreur lors upload du fichier : {}", e.getMessage());
+            log.error("Erreur upload", e);
         }
-        return "redirect:/";
+        return "redirect:/documents"; // Redirige vers la page docs
     }
 
-    // --- NOUVEAU : Endpoint pour TÉLÉCHARGER/VOIR un fichier ---
     @GetMapping("/document/{id}")
     public ResponseEntity<ByteArrayResource> downloadDocument(@PathVariable Long id) {
         TripDocument doc = documentRepository.findById(id).orElse(null);
         if (doc == null) return ResponseEntity.notFound().build();
-
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(doc.getType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.getName() + "\"")
                 .body(new ByteArrayResource(doc.getContent()));
     }
 
-    // --- NOUVEAU : Endpoint pour SUPPRIMER un fichier (Optionnel, mais utile) ---
     @GetMapping("/deleteDoc/{id}")
-    public String deleteDocument(@PathVariable Long id) {
+    public String deleteDoc(@PathVariable Long id) {
         documentRepository.deleteById(id);
-        return "redirect:/";
+        return "redirect:/documents";
     }
 }

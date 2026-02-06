@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/}">
+            <i class="fas fa-road me-2"></i>RoadTrip<span class="text-warning">Italia</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activePage == 'home'} ? 'active'" th:href="@{/}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activePage == 'itinerary'} ? 'active'" th:href="@{/itinerary}"><i class="fas fa-calendar-alt"></i> Itinéraire</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activePage == 'map'} ? 'active'" th:href="@{/map}"><i class="fas fa-map-marked-alt"></i> Carte</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activePage == 'packing'} ? 'active'" th:href="@{/packing}"><i class="fas fa-suitcase"></i> Valise</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activePage == 'docs'} ? 'active'" th:href="@{/documents}"><i class="fas fa-folder-open"></i> Docs</a>
+                </li>
+            </ul>
+            <form th:action="@{/logout}" method="post" class="d-flex ms-lg-3">
+                <button type="submit" class="btn btn-sm btn-outline-light rounded-circle">
+                    <i class="fas fa-power-off"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>

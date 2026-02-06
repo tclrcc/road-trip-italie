@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <title>Dashboard - RoadTrip Italie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/index.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Ciao, <span th:text="${#authentication.name}">Voyageur</span> ! 👋</h2>
+            <p class="text-muted small">Prêt pour la Dolce Vita ?</p>
+        </div>
+        <div th:if="${daysBeforeStart > 0}" class="text-end">
+            <div class="badge bg-primary fs-3 shadow-sm" th:text="${daysBeforeStart}"></div>
+            <small class="d-block text-muted text-uppercase fw-bold mt-1" style="font-size: 0.7rem;">Jours restants</small>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden bg-white rounded-4">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h6 class="text-uppercase text-muted fw-bold small"><i class="fas fa-map-pin text-danger me-2"></i>Prochain arrêt</h6>
+                        <span class="badge bg-light text-dark border">J-<span th:text="${daysBeforeStart}"></span></span>
+                    </div>
+
+                    <div class="d-flex align-items-center flex-wrap">
+                        <div class="me-4 mb-3 mb-md-0">
+                            <h2 class="fw-bold mb-1" th:text="${nextStop.title}">Titre Étape</h2>
+                            <p class="text-muted mb-0"><i class="fas fa-calendar me-1"></i> <span th:text="${#temporals.format(nextStop.date, 'EEEE d MMMM')}">Date</span></p>
+                            <p class="text-primary mt-1 small"><i class="fas fa-car me-1"></i> <span th:text="${nextStop.mainActivity}">Activité</span></p>
+                        </div>
+
+                        <div th:if="${weather}" class="ms-auto text-center bg-light rounded-3 p-3 border">
+                            <i th:class="${weather.iconClass} + ' fa-2x mb-2'"></i>
+                            <div class="fw-bold fs-5"><span th:text="${#numbers.formatDecimal(weather.maxTemp, 1, 0)}">25</span>°C</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                        <a th:href="@{/itinerary}" class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-eye me-2"></i>Voir planning
+                        </a>
+                        <a th:href="@{/packing}" class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="fas fa-suitcase me-2"></i>Valise
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100 bg-white rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-uppercase text-muted fw-bold small mb-3"><i class="fas fa-wallet text-success me-2"></i>Budget Global</h6>
+
+                    <div class="position-relative d-inline-block mb-3">
+                        <svg width="140" height="140" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e9ecef" stroke-width="10" />
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#198754" stroke-width="10"
+                                    stroke-linecap="round"
+                                    th:stroke-dasharray="339.292"
+                                    th:stroke-dashoffset="${339.292 * (1 - (paidAmount / (totalBudget > 0 ? totalBudget : 1)))}"
+                                    transform="rotate(-90 60 60)" />
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <div class="fw-bold text-dark fs-4">
+                                <span th:text="${totalBudget > 0 ? #numbers.formatDecimal((paidAmount/totalBudget)*100, 0, 0) : 0}"></span>%
+                            </div>
+                            <small class="text-muted" style="font-size: 0.6rem;">PAYÉ</small>
+                        </div>
+                    </div>
+
+                    <h3 class="fw-bold mb-0"><span th:text="${#numbers.formatDecimal(totalBudget, 0, 0)}"></span> €</h3>
+                    <small class="text-muted d-block mb-3">Coût Total Estimé</small>
+
+                    <div class="d-flex justify-content-between text-small bg-light rounded p-2">
+                        <span class="text-success fw-bold"><i class="fas fa-check"></i> <span th:text="${#numbers.formatDecimal(paidAmount, 0, 0)}"></span>€</span>
+                        <span class="text-danger fw-bold"><i class="fas fa-clock"></i> <span th:text="${#numbers.formatDecimal(remainingToPay, 0, 0)}"></span>€</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h5 class="fw-bold text-secondary mb-3">Accès Rapide</h5>
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <a th:href="@{/map}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
+                <div class="card-body">
+                    <div class="icon-circle bg-info bg-opacity-10 text-info mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-map-marked-alt fa-lg"></i>
+                    </div>
+                    <h6 class="text-dark fw-bold m-0">Carte</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a th:href="@{/documents}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
+                <div class="card-body">
+                    <div class="icon-circle bg-warning bg-opacity-10 text-warning mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-passport fa-lg"></i>
+                    </div>
+                    <h6 class="text-dark fw-bold m-0">Documents</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a th:href="@{/packing}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
+                <div class="card-body">
+                    <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-tshirt fa-lg"></i>
+                    </div>
+                    <h6 class="text-dark fw-bold m-0">Ma Valise</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center h-100 py-3 bg-light opacity-75">
+                <div class="card-body">
+                    <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-cog fa-lg"></i>
+                    </div>
+                    <h6 class="text-muted fw-bold m-0">Réglages</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted small py-5 mt-4 border-top">
+        RoadTrip App v2.0 &copy; 2026 - <i class="fas fa-heart text-danger"></i>
+    </footer>
+
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

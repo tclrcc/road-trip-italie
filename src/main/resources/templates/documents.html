@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <title>Mes Documents - RoadTrip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/index.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h3 class="fw-bold mb-4"><i class="fas fa-folder-open text-warning me-2"></i>Coffre-fort Numérique</h3>
+
+                    <div class="bg-light p-4 rounded-3 border border-dashed text-center mb-4">
+                        <form method="POST" th:action="@{/uploadDoc}" enctype="multipart/form-data">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-secondary mb-3"></i>
+                            <div class="input-group">
+                                <input type="file" name="file" class="form-control" required>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Ajouter</button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">PDF, Images (Max 10MB)</small>
+                        </form>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mb-3">Fichiers enregistrés (<span th:text="${documents.size()}"></span>)</h5>
+
+                    <div th:if="${documents.isEmpty()}" class="alert alert-info">
+                        Aucun document pour le moment. Ajoutez vos billets, réservations, pièces d'identité...
+                    </div>
+
+                    <div class="list-group">
+                        <div th:each="doc : ${documents}" class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center overflow-hidden">
+                                <div class="me-3 fs-4">
+                                    <i class="fas fa-file-pdf text-danger" th:if="${doc.type.contains('pdf')}"></i>
+                                    <i class="fas fa-file-image text-primary" th:if="${doc.type.contains('image')}"></i>
+                                    <i class="fas fa-file text-secondary" th:unless="${doc.type.contains('pdf') || doc.type.contains('image')}"></i>
+                                </div>
+                                <a th:href="@{'/document/' + ${doc.id}}" target="_blank" class="text-dark text-decoration-none fw-bold text-truncate" style="max-width: 200px;">
+                                    <span th:text="${doc.name}">Document</span>
+                                </a>
+                            </div>
+
+                            <div class="btn-group">
+                                <a th:href="@{'/document/' + ${doc.id}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <a th:href="@{'/deleteDoc/' + ${doc.id}}" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Voulez-vous vraiment supprimer ce fichier ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
