@@ -132,6 +132,14 @@ public class TripController {
         List<ItineraryDay> trip = repository.findAllByOrderByDateAsc();
         model.addAttribute("days", trip);
 
+        // NOUVEAU : Extraire la liste unique des Hubs pour les filtres
+        List<String> hubs = trip.stream()
+                .map(ItineraryDay::getHubLocation)
+                .filter(hub -> hub != null && !hub.trim().isEmpty())
+                .distinct()
+                .toList();
+        model.addAttribute("hubs", hubs);
+
         // Météo pour toute la timeline
         Map<Long, WeatherInfo> weatherMap = new HashMap<>();
         for (ItineraryDay day : trip) {

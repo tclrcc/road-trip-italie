@@ -10,23 +10,13 @@ document.addEventListener("DOMContentLoaded", function() {
         maxZoom: 19
     }).addTo(map);
 
-    // --- 2. PALETTE DE COULEURS (Rotation) ---
-    // Une liste de couleurs modernes et distinctes pour chaque tronçon
-    const routeColors = [
-        '#0d6efd', // Bleu (Bootstrap Primary)
-        '#198754', // Vert (Success)
-        '#fd7e14', // Orange
-        '#6610f2', // Violet
-        '#d63384', // Rose
-        '#0dcaf0', // Cyan
-        '#ffc107', // Jaune
-        '#20c997'  // Teal
-    ];
+    const routeColors = ['#0d6efd', '#198754', '#fd7e14', '#6610f2', '#d63384', '#0dcaf0'];
 
-    // --- 3. RÉCUPÉRATION DES DONNÉES ---
+    // --- 2. RÉCUPÉRATION DES DONNÉES ET CRÉATION DES MARQUEURS ---
     var cards = document.querySelectorAll('.accommodation-card');
     var waypoints = [];
     var markersGroup = L.featureGroup();
+    var latlngsForBounds = [];
 
     cards.forEach(function(card) {
         var lat = parseFloat(card.getAttribute('data-lat'));
@@ -34,144 +24,107 @@ document.addEventListener("DOMContentLoaded", function() {
         var name = card.getAttribute('data-name');
         var step = parseInt(card.getAttribute('data-step'));
         var type = card.getAttribute('data-type');
+        var link = card.getAttribute('data-link'); // Lien airbnb
 
         if (!isNaN(lat) && !isNaN(lng)) {
             waypoints.push({ lat: lat, lng: lng, step: step, name: name });
+            latlngsForBounds.push([lat, lng]);
 
-            // Styles Marqueurs
-            var cssClass = (type === 'START' || type === 'END') ? 'marker-start' : 'marker-hub';
-            var content = (type === 'START') ? '<i class="fas fa-flag"></i>' :
+            // Styles CSS des Marqueurs (récupérés depuis le HTML)
+            var cssClass = (type === 'START') ? 'marker-start' : (type === 'END') ? 'marker-end' : 'marker-hub';
+            var content = (type === 'START') ? '<i class="fas fa-home"></i>' :
                 (type === 'END')   ? '<i class="fas fa-flag-checkered"></i>' : step;
 
             var customIcon = L.divIcon({
                 className: 'custom-div-icon ' + cssClass,
-                html: `<div class='marker-pin'></div><span class='marker-number'>${content}</span>`,
-                iconSize: [30, 42],
-                iconAnchor: [15, 42],
-                popupAnchor: [0, -35]
+                html: `<div class='marker-pin'></div><div class='marker-content'>${content}</div>`,
+                iconSize: [34, 44],
+                iconAnchor: [17, 44],
+                popupAnchor: [0, -40]
             });
 
-            var marker = L.marker([lat, lng], { icon: customIcon })
-                .bindPopup(`<b>${name}</b><br><span class="text-muted">Étape ${step}</span>`);
+            // Construction de la Popup
+            var btnHtml = link ? `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-danger mt-2 w-100 fw-bold"><i class="fab fa-airbnb"></i> Logement</a>` : '';
+            var popupContent = `<div class="text-center px-2 py-1">
+                                    <h6 class="fw-bold mb-1">${name}</h6>
+                                    <span class="badge bg-light text-dark border mb-2">Étape ${step}</span>
+                                    ${btnHtml}
+                                </div>`;
 
+            var marker = L.marker([lat, lng], { icon: customIcon }).bindPopup(popupContent);
             marker.addTo(markersGroup);
 
-            // Interaction Click Liste -> Carte
+            // Synchronisation : Clic sur la liste -> Zoom sur la carte
             card.addEventListener('click', function() {
-                cards.forEach(c => c.classList.remove('border-primary', 'bg-light'));
-                this.classList.add('border-primary', 'bg-light');
-                map.flyTo([lat, lng], 13, { animate: true, duration: 1.5 });
-                marker.openPopup();
+                // Gestion du style de la carte active
+                cards.forEach(c => c.classList.remove('active-hub'));
+                this.classList.add('active-hub');
+
+                // Animation de la carte
+                map.flyTo([lat, lng], 14, { animate: true, duration: 1.5 });
+                setTimeout(() => marker.openPopup(), 1500); // Ouvre la popup à la fin de l'animation
             });
         }
     });
 
     markersGroup.addTo(map);
 
-    // --- 4. ROUTING SEGMENT PAR SEGMENT ---
+    // --- 3. AUTO-CADRAGE DE L'ITALIE ---
+    // Ajuste automatiquement le zoom pour que tous les points soient visibles
+    if (latlngsForBounds.length > 1) {
+        map.fitBounds(L.latLngBounds(latlngsForBounds), { padding: [50, 50] });
+    } else if (latlngsForBounds.length === 1) {
+        map.setView(latlngsForBounds[0], 12);
+    }
+
+    // --- 4. ROUTING SEGMENT PAR SEGMENT (Inchangé mais optimisé visuellement) ---
     waypoints.sort((a, b) => a.step - b.step);
 
     if (waypoints.length > 1) {
-        // On boucle sur chaque paire de points (A->B, B->C, C->D...)
         for (let i = 0; i < waypoints.length - 1; i++) {
-            const start = waypoints[i];
-            const end = waypoints[i+1];
-            const color = routeColors[i % routeColors.length]; // Rotation des couleurs
-
-            fetchRouteSegment(start, end, color, i);
+            fetchRouteSegment(waypoints[i], waypoints[i+1], routeColors[i % routeColors.length], i);
         }
-    } else if (waypoints.length === 1) {
-        map.setView([waypoints[0].lat, waypoints[0].lng], 10);
     }
 
-    // Fonction dédiée pour récupérer et tracer un segment
     function fetchRouteSegment(start, end, color, index) {
-        // OSRM attend "Longitude,Latitude"
         const coords = `${start.lng},${start.lat};${end.lng},${end.lat}`;
         const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
         fetch(osrmUrl)
             .then(res => res.json())
             .then(data => {
-                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                if (data.code === 'Ok' && data.routes.length > 0) {
                     const routeGeoJSON = data.routes[0].geometry;
-
-                    // Calculs infos
                     const distKm = (data.routes[0].distance / 1000).toFixed(0);
                     const timeH = Math.floor(data.routes[0].duration / 3600);
                     const timeM = Math.round((data.routes[0].duration % 3600) / 60);
-                    const timeStr = (timeH > 0 ? `${timeH}h` : '') + `${timeM}min`;
+                    const timeStr = (timeH > 0 ? `${timeH}h ` : '') + `${timeM}min`;
 
-                    // Tracer la ligne colorée
                     const routeLayer = L.geoJSON(routeGeoJSON, {
-                        style: {
-                            color: color,
-                            weight: 6,           // Un peu plus épais pour le style
-                            opacity: 0.8,
-                            lineCap: 'round',
-                            lineJoin: 'round'
-                        }
+                        style: { color: color, weight: 5, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }
                     }).addTo(map);
 
-                    // Tooltip au survol de la route (UX +++)
                     routeLayer.bindTooltip(
-                        `<div style="text-align:center;">
-                            <b>Trajet ${index + 1}</b><br>
-                            ${start.name} ➝ ${end.name}<br>
-                            <i class="fas fa-road"></i> ${distKm} km • <i class="fas fa-clock"></i> ${timeStr}
+                        `<div class="text-center">
+                            <strong class="text-uppercase small">Trajet ${index + 1}</strong><br>
+                            ${start.name} <i class="fas fa-arrow-right mx-1"></i> ${end.name}<br>
+                            <span class="badge bg-light text-dark mt-1"><i class="fas fa-car-side"></i> ${distKm} km • <i class="fas fa-clock"></i> ${timeStr}</span>
                          </div>`,
-                        { sticky: true, className: 'route-tooltip' }
+                        { sticky: true, className: 'shadow-sm border-0 rounded p-2' }
                     );
 
-                    // Effet de survol (Highlight)
-                    routeLayer.on('mouseover', function () { this.setStyle({ weight: 9, opacity: 1 }); });
-                    routeLayer.on('mouseout', function () { this.setStyle({ weight: 6, opacity: 0.8 }); });
-
-                    // Ajuster le zoom pour tout voir (à la fin du chargement du premier segment seulement, pour éviter que ça saute)
-                    if (index === 0) {
-                        // On ne force pas le bounds à chaque fois sinon ça clignote,
-                        // on laisse l'utilisateur explorer ou on fait un fitBounds global à la fin si besoin.
-                    }
-
+                    routeLayer.on('mouseover', function () { this.setStyle({ weight: 8, opacity: 1 }); });
+                    routeLayer.on('mouseout', function () { this.setStyle({ weight: 5, opacity: 0.8 }); });
                 } else {
                     drawFallbackLine(start, end, color);
                 }
             })
-            .catch(err => {
-                console.error(`Erreur segment ${index}:`, err);
-                drawFallbackLine(start, end, color);
-            });
+            .catch(() => drawFallbackLine(start, end, color));
     }
 
     function drawFallbackLine(start, end, color) {
         L.polyline([[start.lat, start.lng], [end.lat, end.lng]], {
-            color: color,
-            weight: 4,
-            dashArray: '10, 10'
+            color: color, weight: 4, dashArray: '10, 10'
         }).addTo(map);
     }
-
-    // --- 5. GÉOLOCALISATION ---
-    var locateControl = L.Control.extend({
-        options: { position: 'topright' },
-        onAdd: function(map) {
-            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-            Object.assign(container.style, {
-                backgroundColor: 'white', width: '34px', height: '34px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-            });
-            container.innerHTML = '<i class="fas fa-crosshairs" style="font-size:18px; color:#333;"></i>';
-            container.title = "Ma position";
-            container.onclick = () => map.locate({setView: true, maxZoom: 12});
-            return container;
-        }
-    });
-    map.addControl(new locateControl());
-
-    map.on('locationfound', e => {
-        L.circle(e.latlng, e.accuracy / 2).addTo(map);
-        L.marker(e.latlng).addTo(map).bindPopup("Vous êtes ici").openPopup();
-    });
-
-    map.on('locationerror', e => alert("Loc impossible : " + e.message));
 });

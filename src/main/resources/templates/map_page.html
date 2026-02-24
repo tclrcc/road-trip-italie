@@ -10,56 +10,122 @@
     <link th:href="@{/css/index.css}" rel="stylesheet">
 
     <style>
-        #map { height: 60vh; width: 100%; border-radius: 15px; z-index: 1; }
-        .accommodation-card { cursor: pointer; transition: all 0.2s; }
-        .accommodation-card:hover { background-color: #f8f9fa; transform: translateX(5px); }
+        body { background-color: #f4f7f6; }
+
+        /* Conteneur de la carte */
+        .map-wrapper {
+            height: 75vh;
+            width: 100%;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            background: white;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 0.75rem;
+            z-index: 1;
+        }
+
+        /* Cartes de la liste des logements */
+        .hub-card {
+            border: 2px solid transparent;
+            border-radius: 1rem;
+            transition: all 0.2s ease-in-out;
+            background-color: white;
+            cursor: pointer;
+        }
+        .hub-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(13, 110, 253, 0.3);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+        }
+        .hub-card.active-hub {
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
+        }
+
+        /* CSS Magique pour les Pins personnalisés sur la carte */
+        .custom-div-icon { background: transparent; border: none; }
+        .marker-pin {
+            width: 34px; height: 34px;
+            border-radius: 50% 50% 50% 0;
+            background: #0d6efd; /* Bleu par défaut */
+            position: absolute;
+            transform: rotate(-45deg);
+            left: 50%; top: 50%;
+            margin: -17px 0 0 -17px;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+            border: 2px solid white;
+        }
+        .marker-start .marker-pin { background: #198754; } /* Vert */
+        .marker-end .marker-pin { background: #dc3545; }   /* Rouge */
+
+        .marker-content {
+            position: absolute;
+            width: 34px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            top: -10px;
+            left: 0;
+            z-index: 2;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container-fluid px-md-5 pb-4">
-    <div class="row">
-        <div class="col-12 mb-3">
-            <h2 class="fw-bold"><i class="fas fa-map-marked-alt text-info me-2"></i>Carte des Hubs</h2>
+<div class="container-fluid px-md-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="fas fa-map-marked-alt text-primary me-2"></i>Carte de l'Itinéraire</h2>
+            <p class="text-muted mb-0">Visualisez vos hubs logistiques et vos trajets calculés en temps réel.</p>
         </div>
+    </div>
 
-        <div class="col-lg-8 mb-4">
-            <div class="shadow-sm border-0 bg-white p-1 rounded-4">
+    <div class="row g-4">
+        <div class="col-lg-8 order-2 order-lg-1">
+            <div class="map-wrapper">
                 <div id="map"></div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100" style="max-height: 60vh; overflow-y: auto;">
-                <div class="card-header bg-white fw-bold sticky-top">
-                    <i class="fas fa-bed me-2"></i>Mes Logements
-                </div>
-                <div class="list-group list-group-flush">
+        <div class="col-lg-4 order-1 order-lg-2">
+            <div class="d-flex flex-column gap-3" style="max-height: 75vh; overflow-y: auto; padding-right: 0.5rem;" id="hub-list">
 
-                    <div th:each="acc : ${accommodations}"
-                         class="list-group-item accommodation-card p-3 border-bottom"
-                         th:data-lat="${acc.latitude}"
-                         th:data-lng="${acc.longitude}"
-                         th:data-name="${acc.name}"
-                         th:data-step="${acc.stepNumber}"
-                         th:data-type="${acc.type}"> <div class="d-flex justify-content-between">
-                        <h6 class="mb-1 fw-bold text-primary" th:text="${acc.name}"></h6>
-                        <span class="badge rounded-pill"
-                              th:classappend="${acc.paid} ? 'bg-success' : 'bg-warning text-dark'"
+                <div th:each="acc : ${accommodations}"
+                     class="hub-card shadow-sm p-3 accommodation-card"
+                     th:data-lat="${acc.latitude}"
+                     th:data-lng="${acc.longitude}"
+                     th:data-name="${acc.name}"
+                     th:data-step="${acc.stepNumber}"
+                     th:data-type="${acc.type}"
+                     th:data-link="${acc.airbnbLink}">
+
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" th:text="${acc.stepNumber}"></span>
+                            <h6 class="mb-0 fw-bold text-dark" th:text="${acc.name}"></h6>
+                        </div>
+                        <span class="badge rounded-pill border"
+                              th:classappend="${acc.paid} ? 'bg-success bg-opacity-10 text-success border-success' : 'bg-warning bg-opacity-10 text-warning border-warning'"
                               th:text="${acc.paid} ? 'Payé' : 'À payer'"></span>
                     </div>
-                        <p class="mb-1 small text-muted"><i class="fas fa-map-marker-alt"></i> <span th:text="${acc.location}"></span></p>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <small class="fw-bold"><span th:text="${acc.cost}"></span> €</small>
-                            <a th:if="${acc.airbnbLink}" th:href="${acc.airbnbLink}" target="_blank" class="btn btn-sm btn-outline-secondary py-0">
-                                Voir <i class="fas fa-external-link-alt ms-1"></i>
-                            </a>
-                        </div>
-                    </div>
 
+                    <p class="mb-2 small text-muted ms-5"><i class="fas fa-location-dot me-1"></i> <span th:text="${acc.location}"></span></p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 ms-5 border-top pt-2">
+                        <div class="fw-bold text-dark fs-5"><span th:text="${acc.cost}"></span> €</div>
+                        <a th:if="${acc.airbnbLink}" th:href="${acc.airbnbLink}" target="_blank" class="btn btn-sm btn-light text-danger fw-semibold" onclick="event.stopPropagation();">
+                            <i class="fab fa-airbnb fa-lg me-1"></i> Voir
+                        </a>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>

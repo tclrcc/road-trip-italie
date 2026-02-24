@@ -1,218 +1,275 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="fr">
 <head>
-    <title>Dashboard - RoadTrip Italie</title>
+    <title>Tableau de Bord - RoadTrip Italie 2026</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link th:href="@{/css/index.css}" rel="stylesheet">
+
+    <style>
+        body { background-color: #f4f7f6; }
+        .widget-card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: transform 0.2s ease-in-out;
+            background: #fff;
+            height: 100%;
+        }
+        .widget-card:hover { transform: translateY(-3px); }
+        .hero-banner {
+            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
+        }
+        .quick-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem;
+            border-radius: 1rem;
+            text-decoration: none;
+            color: #495057;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s;
+        }
+        .quick-action-btn:hover {
+            background-color: #e9ecef;
+            color: #0d6efd;
+            transform: translateY(-2px);
+        }
+        .quick-action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #0d6efd;
+        }
+        .progress-bar-custom { border-radius: 1rem; }
+        .stat-icon-bg {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1.25rem;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container">
+<div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-dark mb-0">Ciao, <span th:text="${#authentication.name}">Voyageur</span> ! 👋</h2>
-            <p class="text-muted small">Prêt pour la Dolce Vita ?</p>
-        </div>
-        <div th:if="${daysBeforeStart > 0}" class="text-end">
-            <div class="badge bg-primary fs-3 shadow-sm" th:text="${daysBeforeStart}"></div>
-            <small class="d-block text-muted text-uppercase fw-bold mt-1" style="font-size: 0.7rem;">Jours restants</small>
-        </div>
-    </div>
-
-    <div th:if="${not #lists.isEmpty(urgentBookings)}" class="alert alert-warning border-warning shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading fw-bold text-dark mb-3">
-            <i class="fas fa-exclamation-triangle text-warning me-2"></i> Réservations Urgentes Requises !
-        </h5>
-
-        <div class="list-group">
-            <div th:each="act : ${urgentBookings}" class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center border-warning bg-transparent">
-                <div>
-                    <strong th:text="${act.name}">Colisée</strong>
-                    <span class="text-muted small ms-2">
-                    Prévu le <span th:text="${#temporals.format(act.itineraryDay.date, 'dd/MM/yyyy')}"></span>
-                </span>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <div class="mb-3 mb-md-0">
+                    <h2 class="fw-bold mb-1"><i class="fas fa-car-side me-2"></i> Grand Tour d'Italie</h2>
+                    <p class="mb-0 opacity-75 fs-5">Préparation en cours pour le départ !</p>
                 </div>
-                <div>
-                    <a th:if="${act.bookingUrl != null && !act.bookingUrl.isEmpty()}"
-                       th:href="${act.bookingUrl}" target="_blank" class="btn btn-sm btn-dark rounded-pill px-3">
-                        <i class="fas fa-external-link-alt me-1"></i> Réserver
-                    </a>
+                <div class="text-center bg-white bg-opacity-25 rounded-4 p-3 shadow-sm border border-light border-opacity-25">
+                    <span class="d-block small text-uppercase fw-bold letter-spacing-1 mb-1">Départ dans</span>
+                    <div class="d-flex gap-3 fs-3 fw-bold font-monospace" id="countdown">
+                        <div class="d-flex flex-column align-items-center">
+                            <span id="cd-days">--</span><span class="fs-6 fw-normal">J</span>
+                        </div>
+                        <div class="d-flex flex-column align-items-center">
+                            <span id="cd-hours">--</span><span class="fs-6 fw-normal">H</span>
+                        </div>
+                        <div class="d-flex flex-column align-items-center">
+                            <span id="cd-mins">--</span><span class="fs-6 fw-normal">M</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-5">
+    <div th:if="${not #lists.isEmpty(urgentBookings)}" class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning border-warning border-2 shadow-sm d-flex align-items-center mb-0" role="alert">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning me-3 pulse-animation"></i>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading fw-bold mb-1">Réservations Urgentes Requises !</h5>
+                    <p class="mb-0 small text-dark">
+                        Vous avez <strong th:text="${urgentBookings.size()}"></strong> activité(s) dont le délai d'anticipation est atteint. Allez sur l'itinéraire pour réserver.
+                    </p>
+                </div>
+                <a th:href="@{/itinerary}" class="btn btn-warning fw-bold px-4 rounded-pill shadow-sm">Gérer</a>
+            </div>
+        </div>
+    </div>
 
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100 overflow-hidden bg-white rounded-4">
-                <div class="card-body p-4 position-relative">
-                    <div class="d-flex justify-content-between mb-3">
-                        <h6 class="text-uppercase text-muted fw-bold small"><i class="fas fa-map-pin text-danger me-2"></i>Prochain arrêt</h6>
-                        <span class="badge bg-light text-dark border">J-<span th:text="${daysBeforeStart}"></span></span>
+    <div class="row g-4">
+
+        <div class="col-12 col-xl-8">
+            <div class="widget-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-wallet text-success me-2"></i> Bilan Financier</h5>
+                    <span class="badge bg-light text-dark border fs-6"><i class="fas fa-bullseye text-danger me-1"></i> Objectif : 4 000 €</span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between text-muted small fw-bold mb-2">
+                        <span>Total Engagé & Prévu</span>
+                        <span th:text="${#numbers.formatDecimal((totalBudget / 4000) * 100, 1, 0)} + '% du budget global'"></span>
                     </div>
-
-                    <div class="d-flex align-items-center flex-wrap">
-                        <div class="me-4 mb-3 mb-md-0">
-                            <h2 class="fw-bold mb-1" th:text="${nextStop.title}">Titre Étape</h2>
-                            <p class="text-muted mb-0"><i class="fas fa-calendar me-1"></i> <span th:text="${#temporals.format(nextStop.date, 'EEEE d MMMM')}">Date</span></p>
-                            <p class="text-primary mt-1 small"><i class="fas fa-car me-1"></i> <span th:text="${nextStop.mainActivity}">Activité</span></p>
-                        </div>
-
-                        <div th:if="${weather}" class="ms-auto text-center bg-light rounded-3 p-3 border">
-                            <i th:class="${weather.iconClass} + ' fa-2x mb-2'"></i>
-                            <div class="fw-bold fs-5"><span th:text="${#numbers.formatDecimal(weather.maxTemp, 1, 0)}">25</span>°C</div>
+                    <div class="progress progress-bar-custom bg-light border" style="height: 1.5rem;">
+                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated fw-bold" role="progressbar"
+                             th:style="'width: ' + ${(totalBudget / 4000) * 100} + '%'"
+                             th:classappend="${totalBudget > 4000 ? 'bg-danger' : 'bg-success'}"
+                             th:text="${#numbers.formatDecimal(totalBudget, 1, 'COMMA', 0, 'POINT')} + ' €'">
                         </div>
                     </div>
+                </div>
 
-                    <div class="mt-4 pt-3 border-top d-flex gap-2">
-                        <a th:href="@{/itinerary}" class="btn btn-primary rounded-pill px-4">
-                            <i class="fas fa-eye me-2"></i>Voir planning
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Poste de dépense</th>
+                            <th class="text-end">Montant Alloué</th>
+                            <th class="text-end">Déjà Réglé</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon-bg bg-primary bg-opacity-10 text-primary me-3"><i class="fas fa-bed"></i></div>
+                                    <div>
+                                        <strong class="d-block text-dark">Hébergements</strong>
+                                        <span class="text-muted small">AirBnb, Hôtels sur les 5 Hubs</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end fw-semibold"><span th:text="${#numbers.formatDecimal(accCosts, 1, 'COMMA', 2, 'POINT')}"></span> €</td>
+                            <td class="text-end text-success fw-medium"><span th:text="${#numbers.formatDecimal(paidAmount - paidActivities, 1, 'COMMA', 2, 'POINT')}"></span> €</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon-bg bg-danger bg-opacity-10 text-danger me-3"><i class="fas fa-gas-pump"></i></div>
+                                    <div>
+                                        <strong class="d-block text-dark">Quotidien</strong>
+                                        <span class="text-muted small">Essence, Péages, Repas</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end fw-semibold"><span th:text="${#numbers.formatDecimal(dailyCosts, 1, 'COMMA', 2, 'POINT')}"></span> €</td>
+                            <td class="text-end text-muted small">-</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon-bg bg-warning bg-opacity-10 text-warning me-3"><i class="fas fa-ticket-alt"></i></div>
+                                    <div>
+                                        <strong class="d-block text-dark">Activités & Visites</strong>
+                                        <span class="text-muted small">Musées, Excursions, Matchs</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end fw-semibold"><span th:text="${#numbers.formatDecimal(activityCosts, 1, 'COMMA', 2, 'POINT')}"></span> €</td>
+                            <td class="text-end text-success fw-medium"><span th:text="${#numbers.formatDecimal(paidActivities, 1, 'COMMA', 2, 'POINT')}"></span> €</td>
+                        </tr>
+                        </tbody>
+                        <tfoot class="border-top-2">
+                        <tr>
+                            <td class="pt-3"><strong class="fs-5 text-dark">Total Restant à Payer :</strong></td>
+                            <td colspan="2" class="text-end pt-3">
+                                <strong class="fs-4 text-primary" th:text="${#numbers.formatDecimal(remainingToPay, 1, 'COMMA', 2, 'POINT')} + ' €'"></strong>
+                            </td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-4 d-flex flex-column gap-4">
+
+            <div class="widget-card p-4">
+                <h6 class="fw-bold text-muted text-uppercase small letter-spacing-1 mb-3">Accès Rapides</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a th:href="@{/itinerary}" class="quick-action-btn h-100 shadow-sm">
+                            <i class="fas fa-map-marked-alt quick-action-icon"></i>
+                            <span class="fw-bold">Itinéraire</span>
                         </a>
-                        <a th:href="@{/packing}" class="btn btn-outline-secondary rounded-pill px-4">
-                            <i class="fas fa-suitcase me-2"></i>Valise
+                    </div>
+                    <div class="col-6">
+                        <a th:href="@{/map}" class="quick-action-btn h-100 shadow-sm">
+                            <i class="fas fa-globe quick-action-icon text-success"></i>
+                            <span class="fw-bold">Carte</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a th:href="@{/documents}" class="quick-action-btn h-100 shadow-sm">
+                            <i class="fas fa-folder-open quick-action-icon text-warning"></i>
+                            <span class="fw-bold">Documents</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a th:href="@{/packing}" class="quick-action-btn h-100 shadow-sm">
+                            <i class="fas fa-suitcase-rolling quick-action-icon text-danger"></i>
+                            <span class="fw-bold">Valises</span>
                         </a>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark"><i class="fas fa-wallet text-success me-2"></i>Bilan Financier Prévisionnel</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light text-muted small text-uppercase">
-                            <tr>
-                                <th>Catégorie</th>
-                                <th class="text-end">Montant Alloué</th>
-                                <th class="text-end">Statut</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>
-                                    <i class="fas fa-bed text-primary me-2"></i> Hébergements
-                                </td>
-                                <td class="text-end fw-semibold">
-                                    <span th:text="${#numbers.formatDecimal(accCosts, 1, 'COMMA', 2, 'POINT')}"></span> €
-                                </td>
-                                <td class="text-end">
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success"
-                                  th:if="${paidAmount == accCosts}">Payé</span>
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning"
-                                          th:if="${paidAmount < accCosts}">En cours</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <i class="fas fa-gas-pump text-danger me-2"></i> Quotidien (Essence, repas...)
-                                </td>
-                                <td class="text-end fw-semibold">
-                                    <span th:text="${#numbers.formatDecimal(dailyCosts, 1, 'COMMA', 2, 'POINT')}"></span> €
-                                </td>
-                                <td class="text-end text-muted small">À prévoir sur place</td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <i class="fas fa-ticket-alt text-warning me-2"></i> Activités & Visites
-                                </td>
-                                <td class="text-end fw-semibold">
-                                    <span th:text="${#numbers.formatDecimal(activityCosts, 1, 'COMMA', 2, 'POINT')}"></span> €
-                                </td>
-                                <td class="text-end text-muted small">Réservations variables</td>
-                            </tr>
-                            </tbody>
-                            <tfoot class="table-group-divider">
-                            <tr class="table-primary text-primary">
-                                <td class="fw-bold">BUDGET TOTAL</td>
-                                <td class="text-end fw-bold fs-5">
-                                    <span th:text="${#numbers.formatDecimal(totalBudget, 1, 'COMMA', 2, 'POINT')}"></span> €
-                                </td>
-                                <td class="text-end fw-bold">
-                                    Restant : <span th:text="${#numbers.formatDecimal(remainingToPay, 1, 'COMMA', 2, 'POINT')}"></span> €
-                                </td>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>Objectif de 4000 €</span>
-                            <span th:text="${#numbers.formatDecimal((totalBudget / 4000) * 100, 1, 0)} + '%'"></span>
+            <div class="widget-card p-4 bg-dark text-white text-center d-flex flex-column justify-content-center" style="background: url('https://images.unsplash.com/photo-1516483638261-f40af5a522a9?auto=format&fit=crop&w=800&q=80') center/cover no-repeat; position: relative;">
+                <div style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); border-radius: 1rem;"></div>
+                <div style="position: relative; z-index: 1;">
+                    <h5 class="fw-bold text-uppercase mb-4 text-light letter-spacing-1">En Bref</h5>
+                    <div class="d-flex justify-content-around">
+                        <div>
+                            <span class="d-block fs-1 fw-bold text-info">22</span>
+                            <span class="small text-uppercase fw-semibold">Jours</span>
                         </div>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                 th:style="'width: ' + ${(totalBudget / 4000) * 100} + '%'"
-                                 th:classappend="${totalBudget > 4000 ? 'bg-danger' : 'bg-success'}"></div>
+                        <div>
+                            <span class="d-block fs-1 fw-bold text-warning">5</span>
+                            <span class="small text-uppercase fw-semibold">Hubs</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div>
-
-    <h5 class="fw-bold text-secondary mb-3">Accès Rapide</h5>
-    <div class="row g-3">
-        <div class="col-6 col-md-3">
-            <a th:href="@{/map}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
-                <div class="card-body">
-                    <div class="icon-circle bg-info bg-opacity-10 text-info mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fas fa-map-marked-alt fa-lg"></i>
-                    </div>
-                    <h6 class="text-dark fw-bold m-0">Carte</h6>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a th:href="@{/documents}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
-                <div class="card-body">
-                    <div class="icon-circle bg-warning bg-opacity-10 text-warning mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fas fa-passport fa-lg"></i>
-                    </div>
-                    <h6 class="text-dark fw-bold m-0">Documents</h6>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a th:href="@{/packing}" class="card border-0 shadow-sm text-center text-decoration-none h-100 py-3 card-hover">
-                <div class="card-body">
-                    <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fas fa-tshirt fa-lg"></i>
-                    </div>
-                    <h6 class="text-dark fw-bold m-0">Ma Valise</h6>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center h-100 py-3 bg-light opacity-75">
-                <div class="card-body">
-                    <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mb-2 mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fas fa-cog fa-lg"></i>
-                    </div>
-                    <h6 class="text-muted fw-bold m-0">Réglages</h6>
-                </div>
-            </div>
         </div>
     </div>
-
-    <footer class="text-center text-muted small py-5 mt-4 border-top">
-        RoadTrip App v2.0 &copy; 2026 - <i class="fas fa-heart text-danger"></i>
-    </footer>
-
 </div>
 
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script>
+    // Configuration de la date de départ (16 Mai 2026 à 08:00)
+    const tripDate = new Date("2026-05-16T08:00:00").getTime();
+
+    const countdown = setInterval(function() {
+        const now = new Date().getTime();
+        const distance = tripDate - now;
+
+        if (distance < 0) {
+            clearInterval(countdown);
+            document.getElementById("countdown").innerHTML = "<span class='text-success fw-bold'>C'est parti !</span>";
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+        // Formatage pour toujours avoir 2 chiffres
+        document.getElementById("cd-days").innerText = days.toString().padStart(2, '0');
+        document.getElementById("cd-hours").innerText = hours.toString().padStart(2, '0');
+        document.getElementById("cd-mins").innerText = minutes.toString().padStart(2, '0');
+    }, 1000);
+</script>
 </body>
 </html>

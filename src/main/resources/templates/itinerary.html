@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link th:href="@{/css/index.css}" rel="stylesheet">
     <style>
-        /* Ajout de quelques styles esthétiques pour peaufiner le rendu */
         .dashed-border {
             border: 2px dashed #0d6efd !important;
             transition: all 0.2s ease-in-out;
@@ -24,6 +23,29 @@
             letter-spacing: 0.5px;
             font-size: 0.75rem;
         }
+        /* NOUVEAU : Styles pour les filtres et l'animation */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .timeline-item {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .timeline-item.hidden-item {
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+        }
+        .filter-glass {
+            background: rgba(248, 249, 250, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -31,17 +53,30 @@
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
 <div class="container pb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-        <h2 class="fw-bold text-dark"><i class="fas fa-route text-primary me-2"></i>Fil du Voyage</h2>
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h2 class="fw-bold text-dark mb-0"><i class="fas fa-route text-primary me-2"></i>Fil du Voyage</h2>
         <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 shadow-sm"><span th:text="${days.size()}"></span> Jours</span>
     </div>
 
+    <div class="sticky-top filter-glass pt-3 pb-3 mb-4 z-2" style="top: 0; margin-left: -15px; margin-right: -15px; padding-left: 15px; padding-right: 15px;">
+        <div class="d-flex overflow-auto gap-2 pb-1 hide-scrollbar" id="filter-container">
+            <button class="btn btn-primary rounded-pill shadow-sm filter-btn flex-shrink-0" data-filter="all">
+                <i class="fas fa-globe-europe me-1"></i> Tout le voyage
+            </button>
+            <button th:each="hub : ${hubs}"
+                    class="btn btn-outline-primary rounded-pill filter-btn flex-shrink-0 fw-medium"
+                    th:data-filter="${hub}">
+                <i class="fas fa-map-marker-alt me-1"></i> <span th:text="${hub}"></span>
+            </button>
+        </div>
+    </div>
+
     <div class="timeline">
-        <div th:each="day : ${days}" class="timeline-item">
+        <div th:each="day : ${days}" class="timeline-item" th:data-hub="${day.hubLocation}">
 
             <div class="timeline-dot" th:classappend="${day.warningZTL} ? 'ztl-alert' : ''"></div>
 
-            <div class="timeline-content position-relative shadow-sm bg-white rounded-3 p-4" th:classappend="${day.warningZTL} ? 'is-ztl border-danger border-opacity-50 border-2' : 'is-hub border-0'">
+            <div class="timeline-content position-relative shadow-sm bg-white rounded-3 p-4 mb-4" th:classappend="${day.warningZTL} ? 'is-ztl border-danger border-opacity-50 border-2' : 'is-hub border-0'">
 
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
@@ -92,7 +127,7 @@
                             </div>
                             <div class="text-end">
                                 <span class="badge bg-light text-dark border mb-1 d-inline-block" th:if="${act.price != null && act.price > 0}">
-                                    <span th:text="${act.price}">25</span> €
+                                    <span th:text="${act.price}"></span> €
                                 </span>
                                 <div class="d-flex align-items-center justify-content-end mt-1">
                                     <span th:if="${act.isPaid}" class="badge bg-success bg-opacity-10 text-success border border-success me-2 small"><i class="fas fa-check"></i> Payé</span>
@@ -124,67 +159,75 @@
                 </div>
             </div>
         </div>
+
+        <div id="no-results-msg" class="text-center py-5 d-none">
+            <i class="fas fa-search-location fa-3x text-muted mb-3 opacity-50"></i>
+            <h5 class="text-muted fw-bold">Aucune étape pour ce filtre</h5>
+        </div>
     </div>
 </div>
 
 <th:block th:each="day : ${days}">
     <div class="modal fade" th:id="'modalActivity-' + ${day.id}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-light border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark">
-                        <i class="fas fa-calendar-plus text-primary me-2"></i>Activité du <span th:text="${#temporals.format(day.date, 'dd/MM')}"></span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <form th:action="@{/itinerary/{id}/addActivity(id=${day.id})}" method="post">
-                    <div class="modal-body pt-3">
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold text-secondary small text-uppercase mb-1">Détails de l'activité</label>
-                            <input type="text" name="name" class="form-control" placeholder="Ex: Visite du Duomo, Musée Ferrari..." required>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase mb-1">Prix unitaire</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.1" name="price" class="form-control" placeholder="0.00">
-                                    <span class="input-group-text bg-white">€</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold text-info small text-uppercase mb-1" title="Jours avant le voyage">Rappel (Anticipation)</label>
-                                <div class="input-group">
-                                    <input type="number" name="reminderDaysBefore" class="form-control" placeholder="Ex: 30">
-                                    <span class="input-group-text bg-white">Jours</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold text-secondary small text-uppercase mb-1">Lien de réservation (URL)</label>
-                            <input type="url" name="bookingUrl" class="form-control" placeholder="https://...">
-                        </div>
-
-                        <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-3 form-check form-switch d-flex align-items-center justify-content-between">
-                            <label class="form-check-label text-success fw-semibold mb-0" th:for="'isPaidCheck-' + ${day.id}">
-                                <i class="fas fa-check-circle me-1"></i> Réservation déjà payée en ligne
-                            </label>
-                            <input class="form-check-input fs-5 m-0" type="checkbox" role="switch" th:id="'isPaidCheck-' + ${day.id}" name="isPaid">
-                        </div>
-                    </div>
-
-                    <div class="modal-footer border-top-0 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary px-4 shadow-sm">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 </th:block>
 
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const timelineItems = document.querySelectorAll('.timeline-item');
+        const noResultsMsg = document.getElementById('no-results-msg');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 1. Gérer le style des boutons (Bouton actif en bleu plein, les autres en contour)
+                filterBtns.forEach(b => {
+                    b.classList.remove('btn-primary', 'shadow-sm');
+                    b.classList.add('btn-outline-primary');
+                });
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary', 'shadow-sm');
+
+                const filterValue = btn.getAttribute('data-filter');
+                let visibleCount = 0;
+
+                // 2. Filtrer les jours avec animation
+                timelineItems.forEach(item => {
+                    const itemHub = item.getAttribute('data-hub');
+
+                    if (filterValue === 'all' || itemHub === filterValue) {
+                        // Afficher
+                        item.style.display = 'block';
+                        // Petit délai pour que le display:block s'applique avant l'animation d'opacité
+                        setTimeout(() => {
+                            item.classList.remove('hidden-item');
+                        }, 10);
+                        visibleCount++;
+                    } else {
+                        // Cacher
+                        item.classList.add('hidden-item');
+                        // Attendre la fin de la transition CSS (0.3s) pour l'enlever du flux DOM
+                        setTimeout(() => {
+                            if (item.classList.contains('hidden-item')) {
+                                item.style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                });
+
+                // 3. Afficher le message "Aucun résultat" si besoin (sécurité)
+                setTimeout(() => {
+                    if(visibleCount === 0) {
+                        noResultsMsg.classList.remove('d-none');
+                    } else {
+                        noResultsMsg.classList.add('d-none');
+                    }
+                }, 300);
+            });
+        });
+    });
+</script>
 </body>
 </html>
