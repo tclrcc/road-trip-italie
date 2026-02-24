@@ -1,8 +1,7 @@
 package com.tony.roadtrip.service;
 
-import com.tony.roadtrip.repository.ItineraryRepository;
+import com.tony.roadtrip.model.PackingItem;
 import com.tony.roadtrip.repository.PackingItemRepository;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,61 +13,79 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationService {
 
-    private final JavaMailSender emailSender;
-    private final PackingItemRepository packingRepo;
-    private final ItineraryRepository itineraryRepo;
+    private final JavaMailSender mailSender;
+    private final PackingItemRepository packingRepository;
 
-    @Value("${spring.mail.username}")
-    private String senderEmail;
+    @Value("${roadtrip.emails.tony}")
+    private String emailTony;
 
-    // Vérifie tous les matins à 08h00
-    @Scheduled(cron = "0 0 8 * * *")
-    public void checkAndSendReminders() {
-        // 1. Récupérer la date de départ (J1)
-        var firstDayOpt = itineraryRepo.findAllByOrderByDateAsc().stream().findFirst();
+    @Value("${roadtrip.emails.copine}")
+    private String emailCopine;
 
-        if (firstDayOpt.isPresent()) {
-            LocalDate startTrip = firstDayOpt.get().getDate();
-            long daysBefore = ChronoUnit.DAYS.between(LocalDate.now(), startTrip);
+    private static final LocalDate DEPARTURE_DATE = LocalDate.of(2026, 5, 16);
+    private static final List<Long> REMINDER_DAYS = List.of(30L, 15L, 7L, 2L);
 
-            // Envoi à J-14, J-7 et J-1
-            if (daysBefore == 14 || daysBefore == 7 || daysBefore == 1) {
-                long missingEssentials = packingRepo.countByIsPackedFalseAndIsEssentialTrue();
+    // S'exécute tous les jours à 09h00
+    @Scheduled(cron = "0 */2 * * * ?")
+    public void checkAndSendPackingReminders() {
+        long daysLeft = ChronoUnit.DAYS.between(LocalDate.now(), DEPARTURE_DATE);
 
-                if (missingEssentials > 0) {
-                    sendEmail(daysBefore, missingEssentials);
-                }
-            }
+        if (REMINDER_DAYS.contains(daysLeft)) {
+            log.info("J-{} avant le départ ! Envoi du récapitulatif des valises...", daysLeft);
+            sendPackingEmail(daysLeft);
         }
     }
 
-    private void sendEmail(long daysLeft, long missingCount) {
+    private void sendPackingEmail(long daysLeft) {
         try {
-            MimeMessage message = emailSender.createMimeMessage();
+            List<PackingItem> allItems = packingRepository.findAll();
+            List<PackingItem> missingItems = allItems.stream()
+                    .filter(item -> !item.isPacked()) // Suppose que tu as un booléen isPacked
+                    .toList();
+
+            long packedCount = allItems.size() - missingItems.size();
+            int progress = allItems.isEmpty() ? 0 : (int) ((packedCount * 100) / allItems.size());
+
+            MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(senderEmail);
-            helper.setTo("tonycoloricchio01@gmail.com"); // À configurer ou récupérer du profil user
-            helper.setSubject("🇮🇹 RoadTrip J-" + daysLeft + " : Alerte Valise !");
+            helper.setTo(new String[]{emailTony, emailCopine});
+            helper.setSubject("🎒 J-" + daysLeft + " : Point sur les valises pour l'Italie !");
 
-            String htmlContent = "<h3>Ciao ! 👋</h3>"
-                    + "<p>Le départ approche, c'est dans <strong>" + daysLeft + " jours</strong>.</p>"
-                    + "<p style='color:red; font-weight:bold;'>⚠️ Attention, il te manque encore " + missingCount + " objets essentiels !</p>"
-                    + "<p>Pense à vérifier ta liste sur l'application.</p>"
-                    + "<br/><p><em>Buon viaggio !</em> 🍕</p>";
+            // Construction du corps de l'email en HTML
+            StringBuilder htmlMsg = new StringBuilder();
+            htmlMsg.append("<h2 style='color:#0d6efd;'>Préparation du Road Trip en Italie</h2>");
+            htmlMsg.append("<p>Salut à vous deux ! Le départ est dans <strong>").append(daysLeft).append(" jours</strong>.</p>");
+            htmlMsg.append("<p>Avancement des valises : <strong>").append(progress).append("%</strong> (")
+                    .append(packedCount).append("/").append(allItems.size()).append(" objets prêts).</p>");
 
-            helper.setText(htmlContent, true);
-            emailSender.send(message);
-            log.info("Mail de rappel envoyé !");
+            if (missingItems.isEmpty()) {
+                htmlMsg.append("<h3 style='color:#198754;'>🎉 Tout est prêt ! Vos valises sont bouclées.</h3>");
+            } else {
+                htmlMsg.append("<h3 style='color:#dc3545;'>⚠️ Il reste encore ces éléments à préparer :</h3><ul>");
+                for (PackingItem item : missingItems) {
+                    htmlMsg.append("<li>").append(item.getName())
+                            .append(" <em>(").append(item.getCategory() != null ? item.getCategory().name() : "Général").append(")</em></li>");
+                }
+                htmlMsg.append("</ul>");
+            }
 
-        } catch (MessagingException e) {
-            log.error("Erreur envoi mail", e);
+            htmlMsg.append("<br><a href='http://localhost:8080/packing' style='background-color:#0d6efd;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;'>Ouvrir l'application</a>");
+
+            helper.setText(htmlMsg.toString(), true);
+            mailSender.send(message);
+
+            log.info("Email de rappel des valises envoyé avec succès !");
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email des valises", e);
         }
     }
 }

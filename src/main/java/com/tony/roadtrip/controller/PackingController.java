@@ -4,7 +4,6 @@ import com.tony.roadtrip.model.ItemCategory;
 import com.tony.roadtrip.model.PackingItem;
 import com.tony.roadtrip.repository.PackingItemRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +18,10 @@ public class PackingController {
     // Repositories
     private final PackingItemRepository packingRepository;
 
-    // Affiche la page dédiée ou le fragment
     @GetMapping
     public String viewPackingList(Model model) {
+        model.addAttribute("activePage", "packing"); // Pour allumer le menu "Valise" dans la barre de nav
+
         var items = packingRepository.findAllByOrderByCategoryAscNameAsc();
 
         // On groupe par catégorie pour l'affichage facile dans la vue
@@ -32,7 +32,11 @@ public class PackingController {
         model.addAttribute("categories", ItemCategory.values());
         model.addAttribute("newItem", new PackingItem()); // Pour le formulaire d'ajout
 
-        return "packing"; // Nom du template HTML
+        // NOUVEAU : Calcul propre de la progression pour la jauge
+        model.addAttribute("totalItems", items.size());
+        model.addAttribute("packedItems", items.stream().filter(PackingItem::isPacked).count());
+
+        return "packing";
     }
 
     // Ajout rapide d'un item
@@ -45,13 +49,11 @@ public class PackingController {
 
     // API AJAX pour cocher/décocher sans recharger la page
     @PostMapping("/toggle/{id}")
-    @ResponseBody
-    public ResponseEntity<?> toggleItem(@PathVariable Long id) {
-        return packingRepository.findById(id).map(item -> {
-            item.setPacked(!item.isPacked());
-            packingRepository.save(item);
-            return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+    public String toggleItem(@PathVariable Long id) {
+        PackingItem item = packingRepository.findById(id).orElseThrow();
+        item.setPacked(!item.isPacked()); // Inverse l'état
+        packingRepository.save(item);
+        return "redirect:/packing";
     }
 
     @GetMapping("/delete/{id}")

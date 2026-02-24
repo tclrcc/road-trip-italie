@@ -1,125 +1,146 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="fr">
 <head>
-    <title>Ma Valise - RoadTrip</title>
+    <title>Ma Valise - RoadTrip Italie</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-    <link th:href="@{/css/font-awesome.min.css}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/index.css}" rel="stylesheet">
+
     <style>
-        .category-header { background-color: #f8f9fa; border-left: 5px solid #0d6efd; }
-    </style>
-    <style media="print">
-        body { background-color: white !important; }
-        .btn, .form-check-input, .hero-section, form { display: none !important; } /* Cache les formulaires */
-        .card { border: none !important; box-shadow: none !important; }
-        .packed-true { text-decoration: none !important; color: black !important; } /* On veut tout lire à l'impression */
-        .list-group-item { border-bottom: 1px solid #000 !important; }
-        /* Ajoute une case carrée vide pour cocher au stylo */
-        .list-group-item::before {
-            content: "☐";
-            font-size: 1.5rem;
-            margin-right: 10px;
-            line-height: 1;
+        body { background-color: #f4f7f6; }
+        .widget-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            border: none;
+        }
+        .category-header {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+        .item-row {
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .item-row:hover { background-color: #f8f9fa; }
+        .item-row.packed {
+            border-left-color: #198754;
+            opacity: 0.6;
+        }
+        .item-row.packed .item-name {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+        .form-check-input.huge {
+            width: 1.5rem; height: 1.5rem; cursor: pointer;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>🎒 Ma Valise Intelligente</h1>
-        <a th:href="@{/}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
-    </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="widget-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="fw-bold text-dark mb-0"><i class="fas fa-suitcase-rolling text-primary me-2"></i> Préparation des Valises</h2>
+                    <span class="badge bg-primary fs-6 rounded-pill px-3 py-2 shadow-sm">
+                        <i class="fas fa-paper-plane me-1"></i> Alertes Auto
+                    </span>
+                </div>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Ajouter un objet</h5>
-            <form th:action="@{/packing/add}" method="post" th:object="${newItem}" class="row g-2 align-items-center">
-                <div class="col-md-4">
-                    <input type="text" th:field="*{name}" class="form-control" placeholder="Ex: Crème solaire" required>
-                </div>
-                <div class="col-md-3">
-                    <select th:field="*{category}" class="form-select">
-                        <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat.label}"></option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select th:field="*{assignedTo}" class="form-select">
-                        <option value="Commun">Commun</option>
-                        <option value="Tony">Tony</option>
-                        <option value="Copine">Copine</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:field="*{essential}" id="isEssential">
-                        <label class="form-check-label text-danger fw-bold" for="isEssential">Vital ?</label>
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between text-muted small fw-bold mb-2">
+                        <span>Avancement global</span>
+                        <span th:text="${totalItems > 0 ? (packedItems * 100 / totalItems) + '%' : '0%'}"></span>
+                    </div>
+                    <div class="progress" style="height: 1.5rem; border-radius: 1rem;">
+                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated fw-bold"
+                             role="progressbar"
+                             th:style="'width: ' + ${totalItems > 0 ? (packedItems * 100 / totalItems) : 0} + '%'"
+                             th:text="${packedItems} + ' / ' + ${totalItems} + ' objets'">
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus"></i></button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3" th:each="entry : ${itemsByCategory}">
-            <div class="card h-100">
-                <div class="card-header category-header fw-bold" th:text="${entry.key.label}"></div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center"
-                        th:each="item : ${entry.value}">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="widget-card p-4 sticky-top" style="top: 20px;">
+                <h5 class="fw-bold mb-4 text-secondary"><i class="fas fa-plus-circle me-2"></i>Ajouter un objet</h5>
+                <form th:action="@{/packing/add}" method="post" th:object="${newItem}">
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Nom de l'objet</label>
+                        <input type="text" th:field="*{name}" class="form-control" placeholder="Ex: Adaptateur secteur, Crème solaire..." required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Catégorie</label>
+                        <select th:field="*{category}" class="form-select">
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat}"
+                                    th:text="${cat.name()}">Catégorie</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">Ajouter à la liste</button>
+                </form>
+            </div>
+        </div>
 
-                        <div class="form-check">
-                            <input class="form-check-input packing-checkbox" type="checkbox"
-                                   th:data-id="${item.id}"
-                                   th:checked="${item.packed}">
-                            <label class="form-check-label"
-                                   th:classappend="${item.packed} ? 'packed-true' : ''"
-                                   th:text="${item.name}"></label>
+        <div class="col-lg-8">
+            <div class="widget-card p-0 overflow-hidden shadow-sm">
 
-                            <span th:if="${item.essential}" class="badge bg-danger ms-1" title="Indispensable">!</span>
-                            <span class="badge bg-light text-dark border ms-1" th:text="${item.assignedTo}"></span>
+                <div th:if="${totalItems == 0}" class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted opacity-50 mb-3"></i>
+                    <h6 class="text-muted fw-bold">Ta valise est vide pour le moment !</h6>
+                    <p class="text-muted small">Ajoute des objets via le formulaire.</p>
+                </div>
+
+                <div th:each="category : ${categories}" th:if="${itemsByCategory.containsKey(category)}">
+
+                    <div class="category-header p-3 d-flex justify-content-between align-items-center border-bottom">
+                        <span th:text="${category.name()}">NOM DE LA CATÉGORIE</span>
+                        <span class="badge bg-secondary rounded-pill" th:text="${itemsByCategory.get(category).size()}">0</span>
+                    </div>
+
+                    <div class="list-group list-group-flush">
+                        <div th:each="item : ${itemsByCategory.get(category)}"
+                             class="list-group-item p-3 item-row"
+                             th:classappend="${item.isPacked} ? 'packed' : ''">
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <form th:action="@{/packing/toggle/{id}(id=${item.id})}" method="post" class="m-0">
+                                        <input type="checkbox" class="form-check-input huge"
+                                               th:checked="${item.isPacked}"
+                                               onchange="this.form.submit()">
+                                    </form>
+                                    <h6 class="mb-0 fw-bold item-name" th:text="${item.name}"></h6>
+                                </div>
+
+                                <a th:href="@{/packing/delete/{id}(id=${item.id})}" class="btn btn-sm btn-link text-danger">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
                         </div>
+                    </div>
 
-                        <a th:href="@{'/packing/delete/' + ${item.id}}" class="text-danger btn-sm">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </li>
-                </ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    // Script JS pur pour gérer le click sans recharger la page
-    document.querySelectorAll('.packing-checkbox').forEach(box => {
-        box.addEventListener('change', function() {
-            const id = this.getAttribute('data-id');
-            const label = this.nextElementSibling;
-
-            // Appel AJAX
-            fetch('/packing/toggle/' + id, { method: 'POST' })
-                .then(response => {
-                    if(response.ok) {
-                        // Mise à jour visuelle immédiate
-                        if(this.checked) {
-                            label.classList.add('packed-true');
-                        } else {
-                            label.classList.remove('packed-true');
-                        }
-                    } else {
-                        alert("Erreur de connexion serveur");
-                        this.checked = !this.checked; // Annuler le check visuel
-                    }
-                });
-        });
-    });
-</script>
-
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>
