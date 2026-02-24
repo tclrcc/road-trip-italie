@@ -2,9 +2,11 @@ package com.tony.roadtrip.controller;
 
 import com.tony.roadtrip.dto.WeatherInfo;
 import com.tony.roadtrip.model.Accommodation;
+import com.tony.roadtrip.model.Activity;
 import com.tony.roadtrip.model.ItineraryDay;
 import com.tony.roadtrip.model.TripDocument;
 import com.tony.roadtrip.repository.AccommodationRepository;
+import com.tony.roadtrip.repository.ActivityRepository;
 import com.tony.roadtrip.repository.DocumentRepository;
 import com.tony.roadtrip.repository.ItineraryRepository;
 import com.tony.roadtrip.service.WeatherService;
@@ -34,6 +36,7 @@ public class TripController {
     private final ItineraryRepository repository;
     private final DocumentRepository documentRepository;
     private final AccommodationRepository accommodationRepository;
+    private final ActivityRepository activityRepository;
     private final WeatherService weatherService;
 
     // --- 1. DASHBOARD (Accueil) ---
@@ -51,14 +54,41 @@ public class TripController {
         model.addAttribute("duration", ChronoUnit.DAYS.between(startDate, trip.getLast().getDate()) + 1);
 
         // Widget Budget
-        double dailyCosts = trip.stream().mapToDouble(d -> d.getDailyBudget() != null ? d.getDailyBudget() : 0).sum();
-        List<Accommodation> accs = accommodationRepository.findAll();
-        double accCosts = accs.stream().mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
-        double paid = accs.stream().filter(Accommodation::isPaid).mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
+        double dailyCosts = trip.stream()
+                .mapToDouble(d -> d.getDailyBudget() != null ? d.getDailyBudget() : 0).sum();
 
-        model.addAttribute("totalBudget", dailyCosts + accCosts);
-        model.addAttribute("paidAmount", paid);
-        model.addAttribute("remainingToPay", (dailyCosts + accCosts) - paid);
+        List<Accommodation> accs = accommodationRepository.findAll();
+        double accCosts = accs.stream()
+                .mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
+        double paidAcc = accs.stream()
+                .filter(Accommodation::isPaid)
+                .mapToDouble(a -> a.getCost() != null ? a.getCost() : 0).sum();
+
+        // NOUVEAU : Calcul du coût total des activités
+        double activityCosts = trip.stream()
+                .filter(d -> d.getActivities() != null)
+                .flatMap(d -> d.getActivities().stream())
+                .mapToDouble(a -> a.getPrice() != null ? a.getPrice() : 0.0)
+                .sum();
+
+        // NOUVEAU : Calcul des activités déjà payées (ex: billets pris en avance sur le net)
+        double paidActivities = trip.stream()
+                .filter(d -> d.getActivities() != null)
+                .flatMap(d -> d.getActivities().stream())
+                .filter(Activity::isPaid)
+                .mapToDouble(a -> a.getPrice() != null ? a.getPrice() : 0.0)
+                .sum();
+
+        // Mise à jour des totaux globaux
+        double totalBudget = dailyCosts + accCosts + activityCosts;
+        double totalPaid = paidAcc + paidActivities;
+        double remainingToPay = totalBudget - totalPaid;
+
+        model.addAttribute("activityCosts", activityCosts);
+        model.addAttribute("paidActivities", paidActivities); // Nouvelle variable
+        model.addAttribute("totalBudget", totalBudget);
+        model.addAttribute("paidAmount", totalPaid); // Remplace paidAcc
+        model.addAttribute("remainingToPay", remainingToPay);
 
         // Widget Prochaine étape (Première date future)
         ItineraryDay nextStop = trip.stream()
@@ -147,5 +177,33 @@ public class TripController {
     public String deleteDoc(@PathVariable Long id) {
         documentRepository.deleteById(id);
         return "redirect:/documents";
+    }
+
+    @PostMapping("/itinerary/{dayId}/addActivity")
+    public String addActivity(@PathVariable Long dayId,
+            @RequestParam String name,
+            @RequestParam(required = false) Double price,
+            @RequestParam(required = false) String bookingUrl,
+            @RequestParam(required = false) String isPaid) {
+
+        ItineraryDay day = repository.findById(dayId).orElseThrow();
+
+        Activity activity = new Activity();
+        activity.setName(name);
+        activity.setPrice(price);
+        activity.setBookingUrl(bookingUrl);
+        activity.setPaid("on".equals(isPaid)); // Checkbox renvoie "on" si cochée
+        activity.setItineraryDay(day);
+
+        activityRepository.save(activity);
+
+        return "redirect:/itinerary"; // Recharge la page pour voir l'ajout
+    }
+
+    // Optionnel : Suppression d'activité
+    @GetMapping("/activity/delete/{id}")
+    public String deleteActivity(@PathVariable Long id) {
+        activityRepository.deleteById(id);
+        return "redirect:/itinerary";
     }
 }
