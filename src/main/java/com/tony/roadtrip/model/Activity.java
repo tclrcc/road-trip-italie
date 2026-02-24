@@ -17,6 +17,9 @@ public class Activity {
     @Column(name = "is_paid")
     private boolean isPaid = false;
 
+    @Column(name = "reminder_days_before")
+    private Integer reminderDaysBefore; // Ex: 30 pour le Colisée
+
     // Relation vers la journée concernée
     @ManyToOne
     @JoinColumn(name = "itinerary_day_id")

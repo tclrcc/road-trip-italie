@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,22 @@ public class TripController {
                     nextStop.getDate()));
         }
 
+        // --- NOUVEAU : GESTION DES RAPPELS DE RÉSERVATION ---
+        List<Activity> pendingReminders = activityRepository.findByIsPaidFalseAndReminderDaysBeforeIsNotNull();
+
+        List<Activity> urgentBookings = pendingReminders.stream()
+                .filter(act -> {
+                    // Calcul de la date d'ouverture des réservations
+                    LocalDate bookingOpeningDate = act.getItineraryDay().getDate().minusDays(act.getReminderDaysBefore());
+                    // On alerte si on est le jour J ou après
+                    return !LocalDate.now().isBefore(bookingOpeningDate);
+                })
+                // Optionnel : Trier pour afficher les plus urgentes en premier (celles dont l'activité est la plus proche)
+                .sorted(Comparator.comparing(a -> a.getItineraryDay().getDate()))
+                .toList();
+
+        model.addAttribute("urgentBookings", urgentBookings);
+
         return "dashboard"; // Nouvelle vue
     }
 
@@ -184,7 +201,8 @@ public class TripController {
             @RequestParam String name,
             @RequestParam(required = false) Double price,
             @RequestParam(required = false) String bookingUrl,
-            @RequestParam(required = false) String isPaid) {
+            @RequestParam(required = false) String isPaid,
+            @RequestParam(required = false) Integer reminderDaysBefore) {
 
         ItineraryDay day = repository.findById(dayId).orElseThrow();
 
@@ -193,6 +211,7 @@ public class TripController {
         activity.setPrice(price);
         activity.setBookingUrl(bookingUrl);
         activity.setPaid("on".equals(isPaid)); // Checkbox renvoie "on" si cochée
+        activity.setReminderDaysBefore(reminderDaysBefore);
         activity.setItineraryDay(day);
 
         activityRepository.save(activity);
